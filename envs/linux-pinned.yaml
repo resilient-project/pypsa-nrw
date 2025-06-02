@@ -1,4 +1,4 @@
-name: pypsa-de
+name: pypsa-nrw-pinned
 channels:
   - conda-forge
   - bioconda

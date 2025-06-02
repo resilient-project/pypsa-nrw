@@ -1,4 +1,4 @@
-name: pypsa-de
+name: pypsa-nrw
 channels:
   - conda-forge
   - bioconda
