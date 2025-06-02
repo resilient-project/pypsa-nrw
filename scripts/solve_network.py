@@ -1368,10 +1368,10 @@ if __name__ == "__main__":
         snakemake = mock_snakemake(
             "solve_sector_network",
             opts="",
-            clusters="5",
-            configfiles="config/test/config.overnight.yaml",
+            clusters="adm",
+            configfiles="config/config.nrw.yaml",
             sector_opts="",
-            planning_horizons="2030",
+            planning_horizons="2045",
         )
     configure_logging(snakemake)
     set_scenario_config(snakemake)
