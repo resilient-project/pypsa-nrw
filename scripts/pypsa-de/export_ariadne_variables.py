@@ -5152,11 +5152,11 @@ if __name__ == "__main__":
         snakemake = mock_snakemake(
             "export_ariadne_variables",
             simpl="",
-            clusters=27,
+            clusters="adm",
             opts="",
-            ll="vopt",
-            sector_opts="None",
-            run="KN2045_Mix",
+            sector_opts="",
+            # run="KN2045_Mix",
+            configfiles=["config/config.nrw.yaml"]
         )
     configure_logging(snakemake)
     config = snakemake.config
@@ -5248,6 +5248,11 @@ if __name__ == "__main__":
             "nice_names": False,
         }
 
+    if isinstance(config["run"]["name"], str):
+        scenario_name = config["run"]["name"]
+    else:
+        scenario_name = snakemake.wildcards.run
+
     yearly_dfs = []
     for i, year in enumerate(planning_horizons):
         print(f"Getting data for year {year}...")
@@ -5262,7 +5267,7 @@ if __name__ == "__main__":
                 "DE",
                 year=year,
                 version=config["version"],
-                scenario=snakemake.wildcards.run,
+                scenario=scenario_name,
             )
         )
 
@@ -5329,7 +5334,7 @@ if __name__ == "__main__":
     meta = pd.Series(
         {
             "Model": "PyPSA-Eur v0.10",
-            "Scenario": snakemake.wildcards.run,
+            "Scenario": scenario_name,
             "Quality Assessment": "preliminary",
             "Internal usage within Kopernikus AG Szenarien": "yes",
             "Release for publication": "no",

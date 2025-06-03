@@ -1070,12 +1070,11 @@ if __name__ == "__main__":
 
         snakemake = mock_snakemake(
             "add_existing_baseyear",
-            configfiles=["config/test/config.dach.yaml"],
-            clusters="5",
-            ll="v1.5",
+            configfiles=["config/config.nrw.yaml"],
+            clusters="adm",
             opts="",
-            sector_opts="none",
-            planning_horizons="2020",
+            sector_opts="",
+            planning_horizons="2045",
             run="KN2045_Mix",
         )
 

@@ -1483,6 +1483,20 @@ def build_admin_shapes(
                 .map(level_map)
             )
 
+        # Overwrite if more specified subregions are available
+        subregion_level = {
+            k: v for k, v in admin_levels.items() if (k != "level") and (k[:2] in countries) and len(k)>2
+        }
+        if subregion_level:
+            subregion_level_list = "\n".join(
+                [f"- {k}: level {v}" for k, v in subregion_level.items()]
+            )
+            logger.info(
+                f"Setting individual administrative levels for subregions:\n{subregion_level_list}"
+            )
+            for k, v in subregion_level.items():
+                nuts3_regions.loc[nuts3_regions.index.str.startswith(k), "column"] = level_map[v]
+
         # If GB is in the countries, set the level, aggregate London area to level 1 due to converging issues
         if "GB" in countries:
             nuts3_regions.loc[nuts3_regions.level1 == "GBI", "column"] = "level1"
@@ -1576,7 +1590,10 @@ if __name__ == "__main__":
     if "snakemake" not in globals():
         from scripts._helpers import mock_snakemake
 
-        snakemake = mock_snakemake("base_network")
+        snakemake = mock_snakemake(
+            "base_network",
+            configfiles=["config/config.nrw.yaml"]
+            )
     configure_logging(snakemake)
     set_scenario_config(snakemake)
     mp.set_start_method("spawn", force=True)
