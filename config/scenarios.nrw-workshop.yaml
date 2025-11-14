@@ -1,0 +1,95 @@
+KN2045_Mix_co2-pipelines:
+  sector:
+    european_co2_pipelines: 
+      enable: true
+      build_year: 2030
+    aviation_demand_factor:
+      2020: 1.0
+      2025: 1.096
+      2030: 1.1816
+      2035: 1.2048
+      2040: 1.2285
+      2045: 1.1193
+      2050: 1.0157
+  industry:
+    St_primary_fraction:
+      2020: 0.7023
+      2025: 0.705
+      2030: 0.6929
+      2035: 0.6592
+      2040: 0.6266
+      2045: 0.6047
+      2050: 0.5995
+    DRI_fraction:
+      2020: 0.0
+      2025: 0.0
+      2030: 0.2011
+      2035: 0.4974
+      2040: 0.7751
+      2045: 1.0
+      2050: 1.0
+  solving:
+    constraints:
+      co2_budget_national:
+        DE:
+          2020: 0.671
+          2025: 0.523
+          2030: 0.346
+          2035: 0.216
+          2040: 0.09
+          2045: -0.05
+          2050: -0.048
+# Default scenario, defined in pypsa.de.yaml
+# Ausgewogener Mix an Technologien zur Dekarbonisierung der Sektoren
+# Breites Energieträgerportfolio in der Endenergie (Strom, Wasserstoff, synthetische Kraftstoffe)
+# Ausbau der erneuerbare Stromerzeugung erreicht politisch gesetzte Ziele
+# Importe erneuerbar erzeugter Energien auf mittlerem Niveau
+# dient als Referenzszenario in der Familie der Ariadne-Szenarien
+
+
+KN2045_Mix_no-co2-pipelines:
+  sector:
+    european_co2_pipelines: 
+      enable: false
+    aviation_demand_factor:
+      2020: 1.0
+      2025: 1.096
+      2030: 1.1816
+      2035: 1.2048
+      2040: 1.2285
+      2045: 1.1193
+      2050: 1.0157
+  industry:
+    St_primary_fraction:
+      2020: 0.7023
+      2025: 0.705
+      2030: 0.6929
+      2035: 0.6592
+      2040: 0.6266
+      2045: 0.6047
+      2050: 0.5995
+    DRI_fraction:
+      2020: 0.0
+      2025: 0.0
+      2030: 0.2011
+      2035: 0.4974
+      2040: 0.7751
+      2045: 1.0
+      2050: 1.0
+  solving:
+    constraints:
+      co2_budget_national:
+        DE:
+          2020: 0.671
+          2025: 0.523
+          2030: 0.346
+          2035: 0.216
+          2040: 0.09
+          2045: -0.05
+          2050: -0.048
+# Default scenario, defined in pypsa.de.yaml
+# Ausgewogener Mix an Technologien zur Dekarbonisierung der Sektoren
+# Breites Energieträgerportfolio in der Endenergie (Strom, Wasserstoff, synthetische Kraftstoffe)
+# Ausbau der erneuerbare Stromerzeugung erreicht politisch gesetzte Ziele
+# Importe erneuerbar erzeugter Energien auf mittlerem Niveau
+# dient als Referenzszenario in der Familie der Ariadne-Szenarien
