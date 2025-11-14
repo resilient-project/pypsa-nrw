@@ -1283,6 +1283,23 @@ def input_heat_source_power(w):
     }
 
 
+def input_european_co2_pipelines(w):
+    european_co2_pipelines = config_provider("sector", "european_co2_pipelines")(w)
+    if european_co2_pipelines["enable"]:
+        inputs= {
+            "buses_offshore": resources("european_co2_pipelines/buses_offshore_s_{clusters}_{opts}.csv"),
+            "links_co2_pipeline": resources("european_co2_pipelines/links_co2_pipeline_s_{clusters}_{opts}.csv"),
+            "stores_co2": resources("european_co2_pipelines/stores_co2_s_{clusters}_{opts}.csv"),
+        }
+    else :
+        inputs= {
+            "buses_offshore": [],
+            "links_co2_pipeline": [],
+            "stores_co2": [],
+        }
+    return inputs
+
+
 rule prepare_sector_network:
     params:
         time_resolution=config_provider("clustering", "temporal", "resolution_sector"),
@@ -1319,6 +1336,7 @@ rule prepare_sector_network:
     input:
         unpack(input_profile_offwind),
         unpack(input_heat_source_power),
+        unpack(input_european_co2_pipelines),
         **rules.cluster_gas_network.output,
         **rules.build_gas_input_locations.output,
         snapshot_weightings=resources(
@@ -1458,3 +1476,35 @@ rule prepare_sector_network:
         "../envs/environment.yaml"
     script:
         "../scripts/prepare_sector_network.py"
+
+
+rule build_european_co2_pipelines:
+    params:
+        european_co2_pipelines=config_provider("sector", "european_co2_pipelines"),
+    input:
+        network=resources("networks/base_s_{clusters}_elec_{opts}.nc"), 
+        regions_onshore=resources("regions_onshore_base_s_{clusters}.geojson"),
+        regions_offshore=resources("regions_offshore_base_s_{clusters}.geojson"),
+        scope=resources("europe_shape.geojson"),
+        kml="data/CCUCCS Projektsammlung.kml"
+    output:
+        buses_offshore=resources(
+            "european_co2_pipelines/buses_offshore_s_{clusters}_{opts}.csv"
+        ),
+        links_co2_pipeline=resources(
+            "european_co2_pipelines/links_co2_pipeline_s_{clusters}_{opts}.csv"
+        ),
+        stores_co2=resources(
+            "european_co2_pipelines/stores_co2_s_{clusters}_{opts}.csv"
+        ),
+    log:
+        logs("build_european_co2_pipelines_{clusters}_{opts}.log"),
+    benchmark:
+        benchmarks("build_european_co2_pipelines_{clusters}_{opts}"),
+    threads: 1
+    resources:
+        mem_mb=2000,
+    conda:
+        "../envs/environment.yaml"
+    script:
+        "../scripts/build_european_co2_pipelines.py"
