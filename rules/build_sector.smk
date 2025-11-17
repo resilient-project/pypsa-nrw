@@ -1358,8 +1358,8 @@ def input_european_co2_pipelines(w):
 
 
 def input_industrial_demand(w):
-    if config_provider("forecast_industry", "enable")(w):
-        scenario = config_provider("forecast_industry", "industry_scenario")(w)
+    if config_provider("industry", "forecast_industry", "enable")(w):
+        scenario = config_provider("industry", "forecast_industry", "forecast_scenario")(w)
         return {
             "industrial_demand": resources(
                 "industrial_energy_demand_base_s_{clusters}_{planning_horizons}_forecast_" + f"{scenario}.csv"
