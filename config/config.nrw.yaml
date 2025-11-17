@@ -119,6 +119,39 @@ clustering:
   temporal:
     resolution_sector: 365H
 
+forecast_industry:
+  forecast_pypsa_mapping_rules:
+    - pypsa_carrier: current electricity
+      when:
+        "Energy carrier": ["Electricity"]
+        "Application": ["Mechanical and other electricity use","Electrolysis (aluminium smelting)"]
+      # optional extra conditions (use [] or omit entirely)
+      # "Sector": []
+      # "Subsector": []
+      # "Application": []
+      # unless: { "Application": [] }
+    - pypsa_carrier: electricity
+      when:
+        "Energy carrier": ["Electricity", "Solar energy"]
+    - pypsa_carrier: coal
+      when:
+        "Energy carrier": ["Coal"]
+    - pypsa_carrier: solid biomass
+      when:
+        "Energy carrier": ["Biomass", "Other RES"]
+    - pypsa_carrier: methane
+      when:
+        "Energy carrier": ["Natural gas", "EE-methane"]
+    - pypsa_carrier: hydrogen
+      when:
+        "Energy carrier": ["Hydrogen"]
+    - pypsa_carrier: low-temperature heat
+      when:
+        "Energy carrier": ["District heating", "Ambient heat"]
+    - pypsa_carrier: naphtha
+      when:
+        "Energy carrier": ["Naphtha", "Fuel oil"] 
+
 wasserstoff_kernnetz:
   enable: true
   reload_locations: false

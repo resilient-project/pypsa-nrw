@@ -30,12 +30,13 @@ if __name__ == "__main__":
         snakemake = mock_snakemake(
             "modify_industry_demand",
             simpl="",
-            clusters=22,
+            clusters="adm",
             opts="",
             ll="vopt",
             sector_opts="None",
             run="KN2045_Mix",
-            planning_horizons=2020,
+            planning_horizons=2045,
+            configfiles=["config/config.nrw.yaml"],
         )
 
     configure_logging(snakemake)

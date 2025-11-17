@@ -37,8 +37,10 @@ if __name__ == "__main__":
 
         snakemake = mock_snakemake(
             "build_industrial_energy_demand_per_node",
-            clusters=48,
-            planning_horizons=2030,
+            clusters="adm",
+            planning_horizons=2045,
+            run="KN2045_Mix",
+            configfiles=["config/config.nrw.yaml"],
         )
     configure_logging(snakemake)
     set_scenario_config(snakemake)
