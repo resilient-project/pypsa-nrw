@@ -385,11 +385,6 @@ if __name__ == "__main__":
         df_forecast, rules, energy_col="Energy_carrier"
     )
 
-    # ------------------ Export setup (reuse single-year path pattern) ------------------
-    base_fn = Path(snakemake.output.industrial_energy_demand_per_node)
-    base_fn.parent.mkdir(parents=True, exist_ok=True)
-    logger.info("[Export] output path: %s", base_fn)
-
     for year in years:
         ycol = str(year)
         logger.info("========== Year %s ==========", ycol)
@@ -535,11 +530,16 @@ if __name__ == "__main__":
         target_id="name",
     )
 
-    # finalize shape and export
-    mapped = mapped.reset_index().rename(columns={"name": NODE_COL})
     # Drop geometry, area, source_region columns
     mapped = mapped.drop(columns=["geometry", "source_region"], errors="ignore")
 
+    # Merge with original nodal industry and only overwrite those from mapped
+    industrial_energy_demand_per_node = pd.read_csv(snakemake.input.industrial_energy_demand_per_node)
+    industrial_energy_demand_per_node.set_index(NODE_COL, inplace=True)
+    
+    forecast_industry = industrial_energy_demand_per_node.copy()
+    forecast_industry.update(mapped)
+
     # Export
     logger.info("[Export %s] Wrote %s (rows=%d, cols=%d)")
-    mapped.sort_values(NODE_COL).to_csv(snakemake.output.industrial_energy_demand_per_node, index=False, float_format="%.2f")
+    forecast_industry.sort_values(NODE_COL).to_csv(snakemake.output.industrial_energy_demand_per_node_forecast, index=True, float_format="%.4f")

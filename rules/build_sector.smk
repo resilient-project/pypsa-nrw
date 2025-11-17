@@ -974,11 +974,14 @@ rule build_industrial_energy_demand_per_node:
 
 rule build_industrial_energy_demand_per_node_forecast:
     input:
+        industrial_energy_demand_per_node=resources(
+            "industrial_energy_demand_base_s_{clusters}_{planning_horizons}.csv"
+        ),
         industry_sector_forecast_fed=("data/forecast_industry/{industry_scenario}/energy_demand.csv"),
         nuts3_shapes=resources("nuts3_shapes.geojson"),
         regions=resources("regions_onshore_base_s_{clusters}.geojson"),
     output:
-        industrial_energy_demand_per_node = resources("industrial_energy_demand_base_s_{clusters}_{planning_horizons}_forecast.csv"),
+        industrial_energy_demand_per_node_forecast=resources("industrial_energy_demand_base_s_{clusters}_{planning_horizons}_forecast.csv"),
     params:
         strict_industry_validation = True,
     threads: 1
