@@ -6573,7 +6573,7 @@ if __name__ == "__main__":
             opts="",
             clusters="adm",
             sector_opts="",
-            planning_horizons="2030",
+            planning_horizons="2045",
             run="KN2045_Mix",
             configfiles=["config/config.nrw.yaml"],
         )

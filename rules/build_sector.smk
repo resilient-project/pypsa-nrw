@@ -973,15 +973,41 @@ rule build_industrial_energy_demand_per_node:
 
 
 rule build_industrial_energy_demand_per_node_forecast:
+    params:
+        forecast_industry=config_provider("industry", "forecast_industry"),
     input:
         industrial_energy_demand_per_node=resources(
             "industrial_energy_demand_base_s_{clusters}_{planning_horizons}.csv"
         ),
-        industry_sector_forecast_fed=("data/forecast_industry/{industry_scenario}/energy_demand.csv"),
+        industry_sector_forecast_fed="data/forecast_industry/{industry_scenario}/energy_demand.csv",
+        carrier_mapping="data/forecast_industry/mapping.csv",
         nuts3_shapes=resources("nuts3_shapes.geojson"),
         regions=resources("regions_onshore_base_s_{clusters}.geojson"),
     output:
-        industrial_energy_demand_per_node_forecast=resources("industrial_energy_demand_base_s_{clusters}_{planning_horizons}_forecast.csv"),
+        industrial_energy_demand_per_node_forecast=resources("industrial_energy_demand_base_s_{clusters}_{planning_horizons}_forecast_{industry_scenario}.csv"),
+    threads: 1
+    resources:
+        mem_mb=1000,
+    log:
+        logs(
+            "build_industrial_energy_demand_per_node_forecast_{clusters}_{planning_horizons}_{industry_scenario}.log"
+        ),
+    benchmark:
+        benchmarks(
+            "build_industrial_energy_demand_per_node_forecast_{clusters}_{planning_horizons}_{industry_scenario}"
+        ),
+    conda:
+        "../envs/environment.yaml"
+    script:
+        "../scripts/build_industrial_energy_demand_per_node_forecast.py"
+
+
+rule build_industrial_energy_demand_per_node_modified_forecast_old:
+    input:
+        industry_sector_forecast_fed="data/forecast_industry/{industry_scenario}/energy_demand.csv",
+        forecast_to_pypsa_mapping = resources("forecast/{industry_scenario}_forecast_pypsa_mapping_final_{planning_horizons}_{clusters}.csv"),
+    output:
+        industrial_energy_demand_per_node = resources("industrial_energy_demand_base_s_{clusters}_{planning_horizons}_{industry_scenario}_forecast.csv"),
     params:
         strict_industry_validation = True,
     threads: 1
@@ -989,16 +1015,18 @@ rule build_industrial_energy_demand_per_node_forecast:
         mem_mb=1000,
     log:
         logs(
-            "build_industrial_energy_demand_per_node_forecast_{clusters}_{planning_horizons}.log"
+            "build_industrial_energy_demand_per_node_{clusters}_{planning_horizons}_{industry_scenario}.log"
         ),
     benchmark:
-        benchmarks(
-            "build_industrial_energy_demand_per_node_forecast_{clusters}_{planning_horizons}"
-        ),
+        (
+            benchmarks(
+              "build_industrial_energy_demand_per_node/s_{clusters}_{planning_horizons}_{industry_scenario}"
+            )
+        )
     conda:
         "../envs/environment.yaml"
     script:
-        "../scripts/build_industrial_energy_demand_per_node_forecast.py"
+        "../scripts/build_industrial_energy_demand_per_node_modified_forecast_old.py"
 
 
 rule build_industrial_energy_demand_per_country_today:
@@ -1329,6 +1357,22 @@ def input_european_co2_pipelines(w):
     return inputs
 
 
+def input_industrial_demand(w):
+    if config_provider("forecast_industry", "enable")(w):
+        scenario = config_provider("forecast_industry", "industry_scenario")(w)
+        return {
+            "industrial_demand": resources(
+                "industrial_energy_demand_base_s_{clusters}_{planning_horizons}_forecast_" + f"{scenario}.csv"
+            )
+        }
+    else:
+        return {
+            "industrial_demand": resources(
+                "industrial_energy_demand_base_s_{clusters}_{planning_horizons}.csv"
+            )
+        }
+
+
 rule prepare_sector_network:
     params:
         time_resolution=config_provider("clustering", "temporal", "resolution_sector"),
@@ -1365,6 +1409,7 @@ rule prepare_sector_network:
     input:
         unpack(input_profile_offwind),
         unpack(input_heat_source_power),
+        unpack(input_industrial_demand),
         unpack(input_european_co2_pipelines),
         **rules.cluster_gas_network.output,
         **rules.build_gas_input_locations.output,
@@ -1419,9 +1464,6 @@ rule prepare_sector_network:
         busmap_s=resources("busmap_base_s.csv"),
         busmap=resources("busmap_base_s_{clusters}.csv"),
         clustered_pop_layout=resources("pop_layout_base_s_{clusters}.csv"),
-        industrial_demand=resources(
-            "industrial_energy_demand_base_s_{clusters}_{planning_horizons}.csv"
-        ),
         hourly_heat_demand_total=resources(
             "hourly_heat_demand_total_base_s_{clusters}.nc"
         ),
