@@ -972,34 +972,11 @@ rule build_industrial_energy_demand_per_node:
         "../scripts/build_industrial_energy_demand_per_node.py"
 
 
-rule build_industrial_regions_map_forecast_to_pypsa:
-    input:
-        industry_sector_forecast_fed = "data/forecast_industry/{industry_scenario}/energy_demand.csv",
-        admin_shapes = resources("admin_shapes.geojson"),
-    output:
-        forecast_to_pypsa_mapping=resources("forecast/{industry_scenario}_forecast_pypsa_mapping_final.csv"),
-        unmatched_forecast=resources("forecast/{industry_scenario}_forecast_unmatched_regions.csv"),
-        unmatched_pypsa=resources("resources/forecast/{industry_scenario}_pypsa_unmatched_regions.csv"),
-    resources:    
-        mem_mb = 1000
-    log: 
-        logs(
-            "logs/build_industrial_regions_map_forecast_to_pypsa_{industry_scenario}.log"
-        ),
-    benchmark:
-        benchmarks(
-            "build_industrial_regions_map_forecast_to_pypsa_{industry_scenario}"
-        ),
-    conda:
-        "../envs/environment.yaml"
-    script:
-        "../scripts/build_industrial_regions_map_forecast_to_pypsa.py"
-
-
 rule build_industrial_energy_demand_per_node_forecast:
     input:
         industry_sector_forecast_fed=("data/forecast_industry/{industry_scenario}/energy_demand.csv"),
-        forecast_to_pypsa_mapping = resources("forecast/{industry_scenario}_forecast_pypsa_mapping_final.csv"),
+        nuts3_shapes=resources("nuts3_shapes.geojson"),
+        regions=resources("regions_onshore_base_s_{clusters}.geojson"),
     output:
         industrial_energy_demand_per_node = resources("industrial_energy_demand_base_s_{clusters}_{planning_horizons}_forecast.csv"),
     params:
@@ -1012,11 +989,9 @@ rule build_industrial_energy_demand_per_node_forecast:
             "build_industrial_energy_demand_per_node_forecast_{clusters}_{planning_horizons}.log"
         ),
     benchmark:
-        (
-            benchmarks(
-              "build_industrial_energy_demand_per_node_forecast_{clusters}_{planning_horizons}"
-            )
-        )
+        benchmarks(
+            "build_industrial_energy_demand_per_node_forecast_{clusters}_{planning_horizons}"
+        ),
     conda:
         "../envs/environment.yaml"
     script:

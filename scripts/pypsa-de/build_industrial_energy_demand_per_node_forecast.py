@@ -22,14 +22,11 @@ from __future__ import annotations
 from pathlib import Path
 import logging, re
 import pandas as pd
+import geopandas as gpd
 
 # Optional helper from your repo (for real Snakemake runs)
 
-try:
-    from scripts._helpers import configure_logging, mock_snakemake  # type: ignore
-except Exception:
-    configure_logging = None
-    mock_snakemake = None
+from scripts._helpers import configure_logging, set_scenario_config
 
 # ---------------------------------------------------------------------
 # Logger
@@ -250,24 +247,74 @@ CANON = {NORM(c): c for c in TARGET_CARRIERS}
 def canon(x):  # map any spelling to the canonical carrier if possible
     return CANON.get(NORM(x), x)
 
-# ----------------------- main -------------------------------
+
+def proportional_overlay(source, target, source_id, target_id):
+    """
+    Allocate source-level quantities to target regions proportional to
+    area overlap.
+
+    Parameters
+    ----------
+    source : gpd.GeoDataFrame
+        Source polygons with attributes to allocate.
+    target : gpd.GeoDataFrame
+        Target polygons (e.g. PyPSA regions).
+    source_id : str
+        Column name identifying each source polygon.
+    target_id : str
+        Column name identifying each target polygon.
+
+    Returns
+    -------
+    gpd.GeoDataFrame
+        Target-level attributes after proportional allocation.
+    """
+    src = source.to_crs(3857)
+    trg = target.to_crs(3857)
+
+    # compute source area per polygon
+    src["area_src"] = src.geometry.area
+
+    # intersection
+    ov = gpd.overlay(trg, src, how="intersection", keep_geom_type=True)
+
+    # compute intersection share relative to the source polygon
+    ov["area_int"] = ov.geometry.area
+    ov["share"] = ov["area_int"] / ov["area_src"]
+
+    # identify numeric columns *from source* only
+    numeric_cols = (
+        ov.select_dtypes(include=["number"])
+          .columns.difference(
+              {target_id, source_id, "area_src", "area_int", "share"}
+          )
+    )
+
+    # scale only source attributes
+    ov[numeric_cols] = ov[numeric_cols].mul(ov["share"], axis=0)
+
+    # Drop helper area columns
+    ov = ov.drop(columns=["area_src", "area_int", "share"], errors="ignore")
+
+    # collapse into target regions
+    out = ov.dissolve(target_id, aggfunc="sum")
+
+    return out
+
 
 if __name__ == "__main__":
-    # Snakemake / local testing bootstrap
+    # --- Snakemake / local testing bootstrap ---
     if "snakemake" not in globals():
-        if mock_snakemake is None:
-            raise RuntimeError(
-                "This script is Snakemake-only. Run via Snakemake or provide mock_snakemake in scripts/_helpers."
-            )
+        from scripts._helpers import mock_snakemake
+
         snakemake = mock_snakemake(
-            "build_industrial_energy_demand_per_node_modified_forecast",
-            run="baseline",
-            clusters=48,
-            planning_horizons=[2030, 2040, 2050],
-            industry_scenario="Orientierungsszenario_Strom",
+            "build_industrial_energy_demand_per_node_forecast",    
+            industry_scenario="Orientierungsszenario_H2",
+            clusters="adm",
+            planning_horizons="2045",
+            run="KN2045_Mix",
             configfiles=["config/config.nrw.yaml"],
         )
-        
     
     if not logger.handlers:
       logging.basicConfig(
@@ -277,10 +324,14 @@ if __name__ == "__main__":
     logger.setLevel(logging.DEBUG)  
     logger.info("[Debug] Effective log level = %s", logging.getLevelName(logger.getEffectiveLevel()))
 
+    # Input geometries
+    nuts3_shapes = gpd.read_file(snakemake.input.nuts3_shapes)
+    regions = gpd.read_file(snakemake.input.regions)
+
     # ------------------ Step 1: Load ------------------
     logger.info("[Step 1] Load inputs")
     df_forecast = pd.read_csv(snakemake.input.industry_sector_forecast_fed, index_col=0)
-    df_region_map = pd.read_csv(snakemake.input.forecast_to_pypsa_mapping, index_col=0)
+
     rules = (snakemake.config.get("forecast_industry", {}) or {}).get(
         "forecast_pypsa_mapping_rules", []
     )
@@ -334,27 +385,6 @@ if __name__ == "__main__":
         df_forecast, rules, energy_col="Energy_carrier"
     )
 
-    logger.info("[Step 4] Map regions forecast_region → pypsa_region")
-    df_mapped = df_map_car.merge(
-        df_region_map,
-        left_on="Region",
-        right_on="forecast_region",
-        how="left",
-        validate="m:m",
-    )
-    n_unmapped = int(df_mapped["pypsa_region"].isna().sum())
-    if n_unmapped:
-        logger.warning("[Step 4] Unmapped forecast regions: %d", n_unmapped)
-        if strict:
-            top = (
-                df_mapped[df_mapped["pypsa_region"].isna()]
-                .groupby("Region")
-                .size()
-                .sort_values(ascending=False)
-                .head(12)
-            )
-            logger.debug("[Step 4] Unmapped regions (top):\n%s", top.to_string())
-
     # ------------------ Export setup (reuse single-year path pattern) ------------------
     base_fn = Path(snakemake.output.industrial_energy_demand_per_node)
     base_fn.parent.mkdir(parents=True, exist_ok=True)
@@ -371,24 +401,24 @@ if __name__ == "__main__":
             "Subsector",
             "Application",
             "Energy_carrier",
-            "pypsa_region",
+            "Region",
             "pypsa_energy_carrier_mapping",
             ycol,
         ]
-        keep = [c for c in keep if c in df_mapped.columns]
+        keep = [c for c in keep if c in df_map_car.columns]
         if ycol not in keep:
             logger.error("[Year %s] Column not found in data; skipping.", ycol)
             continue
-        df_pruned = df_mapped[keep].copy()
+        df_pruned = df_map_car[keep].copy()
         df_pruned["pypsa_energy_carrier_mapping"] = df_pruned["pypsa_energy_carrier_mapping"].map(canon)
 
         # ------------------ Step 6 ------------------
-        logger.info("[Step 6] Aggregate to pypsa_region (wide by year %s)", ycol)
+        logger.info("[Step 6] Aggregate to (wide by year %s)", ycol)
         group_keys = [
             k
             for k in [
                 "Country",
-                "pypsa_region",
+                "Region",
                 "pypsa_energy_carrier_mapping",
                 "Subsector",
                 "Application",
@@ -406,13 +436,13 @@ if __name__ == "__main__":
         by_carrier = df_region_wide.groupby(
             "pypsa_energy_carrier_mapping", as_index=True
         )[ycol].sum()
-        by_region = df_region_wide.groupby("pypsa_region", as_index=True)[ycol].sum()
+        by_region = df_region_wide.groupby("Region", as_index=True)[ycol].sum()
 
       # ------------------ Step 8 ------------------
         logger.info("[Step 8] Reshape: one row per node, one column per carrier")
-        sub = df_region_wide[["pypsa_region", "pypsa_energy_carrier_mapping", ycol]].copy()
+        sub = df_region_wide[["Region", "pypsa_energy_carrier_mapping", ycol]].copy()
         wide = sub.pivot_table(
-            index="pypsa_region",
+            index="Region",
             columns="pypsa_energy_carrier_mapping",
             values=ycol,
             aggfunc="sum",
@@ -471,10 +501,45 @@ if __name__ == "__main__":
                 + ", ".join(list(map(str, other_carriers))[:10])
             )
 
-        # finalize shape and export
-        wide = wide.reset_index().rename(columns={"pypsa_region": NODE_COL})
+    # Map to PyPSA-Eur regions
+    logger.info("[Step 10] Map to PyPSA-Eur regions")
+    gdf_industry = nuts3_shapes[["index", "geometry"]].copy()
+    gdf_industry = gdf_industry.rename(columns={"index": "source_region"})
+    
+    # Merge data from wide to gdf
+    gdf_industry = gdf_industry.merge(
+        wide.reset_index(),
+        left_on="source_region",
+        right_on="Region",
+        how="inner",
+        validate="" \
+        "1:1",
+    )
+    gdf_industry = gdf_industry.drop(columns=["Region"], errors="ignore")
 
-        # ------------------ Step 10 ------------------
-        fn = build_output_path_for_year(base_fn, year) if len(years) > 1 else base_fn
-        wide.sort_values(NODE_COL).reset_index(drop=True).to_csv(fn, index=False, float_format="%.2f")
-        logger.info("[Export %s] Wrote %s (rows=%d, cols=%d)", ycol, fn, *wide.shape)
+    # Regions subset, only include regions that geographically covered by union of gdf_industry
+    industry_union = gdf_industry.to_crs(3857).union_all()
+    regions_m = regions.to_crs(3857)
+    regions_m["area"] = regions_m.geometry.area
+    regions_m["area_int"] = regions_m.geometry.intersection(industry_union).area
+    regions_m["share"] = regions_m["area_int"] / regions_m["area"]
+    regions_m = regions_m[regions_m["share"] > 0.99] # Ensure that bordering intersections to NL, BE, etc. are excluded
+    regions_m = regions_m.drop(columns=["area", "area_int", "share"], errors="ignore")
+    regions_m.reset_index(drop=True, inplace=True)
+    regions_m.to_crs("EPSG:4326", inplace=True)
+
+    mapped = proportional_overlay(
+        source=gdf_industry,
+        target=regions_m,
+        source_id="source_region",
+        target_id="name",
+    )
+
+    # finalize shape and export
+    mapped = mapped.reset_index().rename(columns={"name": NODE_COL})
+    # Drop geometry, area, source_region columns
+    mapped = mapped.drop(columns=["geometry", "source_region"], errors="ignore")
+
+    # Export
+    logger.info("[Export %s] Wrote %s (rows=%d, cols=%d)")
+    mapped.sort_values(NODE_COL).to_csv(snakemake.output.industrial_energy_demand_per_node, index=False, float_format="%.2f")
