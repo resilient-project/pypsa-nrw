@@ -18,11 +18,10 @@ Pipeline (kept simple, step-logged)
    7.4) Export CSV (reuse single-year path; year replaced/inserted for multi-year)
 """
 
-from __future__ import annotations
-from pathlib import Path
 import logging, re
 import pandas as pd
 import geopandas as gpd
+from shapely.geometry import Point
 
 # Optional helper from your repo (for real Snakemake runs)
 
@@ -70,38 +69,6 @@ def detect_year_columns(df: pd.DataFrame) -> list[str]:
     return sorted(years, key=int)
 
 
-def build_output_path_for_year(base_path: Path, year: int) -> Path:
-    """
-    Multi-year export naming without extra dirs:
-    1) If '{year}' in name: replace it.
-    2) If a bracketed list of years like '[2030, 2040]' appears, replace that whole list with the current year.
-    3) Else replace the last 4-digit year in the stem.
-    4) Else append _{year} before the suffix.
-    """
-    name = base_path.name
-    y = str(year)
-
-    # 1) Explicit placeholder
-    if "{year}" in name:
-        return base_path.with_name(name.replace("{year}", y))
-
-    # 2) Replace any bracketed list of years (e.g., [2030, 2040] or [2030,2040])
-    #    Pattern: [ <year>(, <year>)+ ] with optional spaces
-    name2 = re.sub(r"\[\s*\d{4}(?:\s*,\s*\d{4})+\s*\]", y, name)
-    if name2 != name:
-        return base_path.with_name(name2)
-
-    # 3) Replace the last 4-digit year in the stem (handles names that already have a single year)
-    stem, suffix = base_path.stem, base_path.suffix
-    matches = list(re.finditer(r"(19|20)\d{2}", stem))
-    if matches:
-        s, e = matches[-1].span()
-        new_stem = stem[:s] + y + stem[e:]
-        return base_path.with_name(new_stem + suffix)
-
-    # 4) Fallback: append _{year}
-    return base_path.with_name(f"{stem}_{y}{suffix}")
-  
 def _force_numeric(df: pd.DataFrame) -> pd.DataFrame:
     # Coerce object columns to numeric; leave numeric columns as-is
     out = df.copy()
@@ -171,7 +138,6 @@ def proportional_overlay(source, target, source_id, target_id):
 
 
 if __name__ == "__main__":
-    # --- Snakemake / local testing bootstrap ---
     if "snakemake" not in globals():
         from scripts._helpers import mock_snakemake
 
@@ -183,6 +149,9 @@ if __name__ == "__main__":
             run="KN2045_Mix",
             configfiles=["config/config.nrw.yaml"],
         )
+    
+    configure_logging(snakemake)  # pylint: disable=E0606
+    set_scenario_config(snakemake)
     
     config_forecast = snakemake.params.get("forecast_industry", {})
 
@@ -198,8 +167,9 @@ if __name__ == "__main__":
     logger.info("[Step 1] Load inputs")
     nuts3_shapes = gpd.read_file(snakemake.input.nuts3_shapes)
     regions = gpd.read_file(snakemake.input.regions)
-    df_forecast = pd.read_csv(snakemake.input.industry_sector_forecast_fed, index_col=0)
-    
+    ied_forecast = pd.read_csv(snakemake.input.industrial_energy_demand_forecast, index_col=0) # TWh p.a.
+    ipe_forecast = pd.read_csv(snakemake.input.industrial_process_emissions_forecast) # Mt p.a.
+
     carrier_mapping = pd.read_csv(snakemake.input.carrier_mapping).dropna(subset=["pypsa_carrier"])
     carrier_mapping = carrier_mapping[DEMAND_COLS + ["pypsa_carrier"]]
 
@@ -207,15 +177,10 @@ if __name__ == "__main__":
     year = snakemake.wildcards.planning_horizons
     current_electricity_year = str(config_forecast.get("current_electricity_year", 2021))
     strict = config_forecast.get("strict_industry_validation", True)
-    rules = config_forecast.get("forecast_pypsa_mapping_rules", {})
-    if not rules:
-        raise ValueError(
-            "Missing config.forecast_industry.forecast_pypsa_mapping_rules."
-        )
 
     # ------------------ Step 2: planning_horizons & years ------------------
-    year_cols = detect_year_columns(df_forecast)
-    param_cols = [c for c in df_forecast.columns if c not in year_cols]
+    year_cols = detect_year_columns(ied_forecast)
+    param_cols = [c for c in ied_forecast.columns if c not in year_cols]
 
     if not year_cols:
         raise ValueError("No 4-digit year columns found in FORECAST table.")
@@ -226,11 +191,11 @@ if __name__ == "__main__":
             f"Requested planning_horizons not in data: {missing}. Available: {avail}"
         )
     
-    df_forecast = df_forecast[param_cols + [current_electricity_year, year]]
+    ied_forecast = ied_forecast[param_cols + [current_electricity_year, year]]
 
     # ------------------ Step 4: Apply carrier mapping ------------------
     # Map using carrier_mapping
-    df_map_car = df_forecast.merge(
+    df_map_car = ied_forecast.merge(
         carrier_mapping,
         on=DEMAND_COLS,
         how="left",
@@ -380,7 +345,6 @@ if __name__ == "__main__":
     regions_m = regions_m[regions_m["share"] > 0.99] # Ensure that bordering intersections to NL, BE, etc. are excluded
     regions_m = regions_m.drop(columns=["area", "area_int", "share"], errors="ignore")
     regions_m.reset_index(drop=True, inplace=True)
-    regions_m.to_crs("EPSG:4326", inplace=True)
 
     mapped = proportional_overlay(
         source=gdf_industry,
@@ -391,6 +355,34 @@ if __name__ == "__main__":
 
     # Drop geometry, area, source_region columns
     mapped = mapped.drop(columns=["geometry", "source_region"], errors="ignore")
+
+    #### PROCESS EMISSIONS ####
+    # Process emissions, map using coordinates
+    ipe_forecast["geometry"] = ipe_forecast.apply(
+        lambda row: Point(row["longitude"], row["latitude"]),
+        axis=1,
+    )
+    ipe_forecast = gpd.GeoDataFrame(
+        ipe_forecast,
+        crs="EPSG:4326"
+    )
+    ipe_forecast = ipe_forecast.to_crs("EPSG:3857")
+
+    # Map using sjoin_nearest
+    ipe_forecast = ipe_forecast.sjoin_nearest(
+        regions_m.to_crs("EPSG:3857")[["name", "geometry"]],
+        how="left",
+        distance_col="dist_to_region",
+    )
+
+    # Group by region and sum for the requested year
+    ipe_year = ipe_forecast.groupby(
+        "name", as_index=True
+    )[[year]].sum()
+
+    logger.info("[Step 11] Add process emissions")
+    # Add process emissions to mapped
+    mapped["process emission"] = ipe_year.reindex(mapped.index).fillna(0.0)[year]
 
     # Merge with original nodal industry and only overwrite those from mapped
     industrial_energy_demand_per_node = pd.read_csv(snakemake.input.industrial_energy_demand_per_node)

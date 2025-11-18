@@ -979,7 +979,8 @@ rule build_industrial_energy_demand_per_node_forecast:
         industrial_energy_demand_per_node=resources(
             "industrial_energy_demand_base_s_{clusters}_{planning_horizons}.csv"
         ),
-        industry_sector_forecast_fed="data/forecast_industry/{industry_scenario}/energy_demand.csv",
+        industrial_energy_demand_forecast="data/forecast_industry/{industry_scenario}/energy_demand.csv",
+        industrial_process_emissions_forecast="data/forecast_industry/{industry_scenario}/process_emissions.csv",
         carrier_mapping="data/forecast_industry/mapping.csv",
         nuts3_shapes=resources("nuts3_shapes.geojson"),
         regions=resources("regions_onshore_base_s_{clusters}.geojson"),
