@@ -6643,9 +6643,9 @@ if __name__ == "__main__":
             opts="",
             clusters="adm",
             sector_opts="",
-            planning_horizons="2045",
-            run="KN2045_Mix",
-            configfiles=["config/config.nrw.yaml"],
+            planning_horizons="2035",
+            run="KN2045_Mix_co2-pipelines",
+            configfiles=["config/config.nrw-workshop.yaml"],
         )
 
     configure_logging(snakemake)  # pylint: disable=E0606
