@@ -184,7 +184,7 @@ sector:
 
 industry: # FORECAST to PyPSA_Eur mapping in data/forecast_industry/mapping.csv
   forecast_industry:
-    enable: true
+    enable: false
     current_electricity_year: 2021 # must be >= 2021 (earliest FORECAST data year)
     strict_industry_validation: true # if true, raises error if large chunk of industry demand cannot be mapped
     forecast_scenario: Orientierungsszenario_Strom

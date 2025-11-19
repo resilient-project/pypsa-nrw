@@ -42,7 +42,12 @@ if __name__ == "__main__":
     if "snakemake" not in globals():
         from scripts._helpers import mock_snakemake
 
-        snakemake = mock_snakemake("build_sequestration_potentials", clusters="128")
+        snakemake = mock_snakemake(
+            "build_clustered_co2_sequestration_potentials", 
+            clusters="adm",
+            run="KN2045_Mix",
+            configfiles=["config/config.nrw.yaml"],
+        )
 
     configure_logging(snakemake)
     set_scenario_config(snakemake)
