@@ -721,7 +721,7 @@ rule build_clustered_co2_sequestration_potentials:
         regions_offshore=resources("regions_offshore_base_s_{clusters}.geojson"),
     output:
         sequestration_potential=resources(
-            "co2_sequestration_potential_base_s_{clusters}.csv"
+            "co2_sequestration_potential_base_s_{clusters}.geojson"
         ),
     threads: 1
     resources:
@@ -1359,7 +1359,7 @@ rule prepare_sector_network:
             else []
         ),
         sequestration_potential=lambda w: (
-            resources("co2_sequestration_potential_base_s_{clusters}.csv")
+            resources("co2_sequestration_potential_base_s_{clusters}.geojson")
             if config_provider(
                 "sector", "regional_co2_sequestration_potential", "enable"
             )(w)

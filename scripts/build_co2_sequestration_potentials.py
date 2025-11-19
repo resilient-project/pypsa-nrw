@@ -298,7 +298,11 @@ if __name__ == "__main__":
     if "snakemake" not in globals():
         from scripts._helpers import mock_snakemake
 
-        snakemake = mock_snakemake("build_co2_storage")
+        snakemake = mock_snakemake(
+            "build_co2_sequestration_potentials",
+            run="KN2045_Mix",
+            configfiles=["config/config.nrw.yaml"],
+        )
 
     table_fn = snakemake.input.storage_table
     map_fn = snakemake.input.storage_map

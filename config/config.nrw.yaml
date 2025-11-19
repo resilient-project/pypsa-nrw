@@ -134,7 +134,7 @@ wasserstoff_kernnetz:
 
 sector:
   regional_co2_sequestration_potential:
-    enable: false
+    enable: true
     attribute:
     - conservative estimate Mt
     - conservative estimate GAS Mt
@@ -147,11 +147,11 @@ sector:
   co2_sequestration_potential:
     2020: 0
     2025: 0
-    2030: 137
+    2030: 40
     2035: 137
-    2040: 137
-    2045: 137
-    2050: 137
+    2040: 180
+    2045: 250
+    2050: 250
   co2_sequestration_cost: 30
   co2_sequestration_lifetime: 50
   co2_spatial: true
