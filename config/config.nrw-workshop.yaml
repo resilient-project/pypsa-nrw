@@ -10,8 +10,9 @@ remote:
 run:
   prefix: nrw-workshop
   name:
-  - KN2045_Mix_co2-pipelines
-  - KN2045_Mix_no-co2-pipelines
+  - co2-pipelines-min-ccs
+  - delayed-co2-pipelines-min-ccs  
+  - co2-pipelines-max-ccs
   scenarios:
     enable: true
     manual_file: config/scenarios.manual.yaml
