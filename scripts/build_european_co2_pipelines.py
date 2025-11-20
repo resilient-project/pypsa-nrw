@@ -490,8 +490,8 @@ if __name__ == "__main__":
             "build_european_co2_pipelines",
             clusters="adm",
             opts="",
-            run="KN2045_Mix",
-            configfiles=["config/config.nrw.yaml"],        
+            run="KN2045_Mix_co2-pipelines",
+            configfiles=["config/config.nrw-workshop.yaml"],        
         )
 
     configure_logging(snakemake)
@@ -607,6 +607,18 @@ if __name__ == "__main__":
         scope,
         "AC",
     )
+
+    # Manually add CarbonConnect offshore bus to avoid pipeline to be connected to GB offshore bus
+    buses_co2_offshore.loc["OFFSHORE CARBONCONNECT"] = pd.Series({
+        "x": 1.5712774000000052,
+        "y": 52.86248229754098,
+        "carrier": "AC",
+    })
+    g_cc = gpd.GeoSeries([Point(buses_co2_offshore.loc["OFFSHORE CARBONCONNECT", ["x", "y"]].values)], crs=GEO_CRS).to_crs(DISTANCE_CRS).buffer(5000)
+
+    buses_co2_offshore.loc["OFFSHORE CARBONCONNECT", "geometry"] = g_cc.iloc[0]
+    buses_co2_offshore = gpd.GeoDataFrame(buses_co2_offshore, geometry="geometry", crs=DISTANCE_CRS)
+
     # Append to existing buses
     buses_coords = pd.concat([buses_coords, buses_co2_offshore[["x", "y"]]])
 
@@ -684,9 +696,9 @@ if __name__ == "__main__":
     stores = map_to_closest_region(
         stores, buses_co2_offshore, max_distance=MAX_STORE_DISTANCE
     )
-    stores = map_to_closest_region(
-        stores, regions_offshore, max_distance=COASTAL_DISTANCE,
-    )
+    # stores = map_to_closest_region(
+    #     stores, regions_offshore, max_distance=COASTAL_DISTANCE,
+    # )
     # Rename bus0 to bus
     stores = stores.rename(columns={"bus0": "bus"})
     stores = stores.drop(columns=["bus1"])

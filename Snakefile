@@ -968,3 +968,11 @@ rule ariadne_report_only:
             RESULTS + "ariadne/report/elec_price_duration_curve.pdf",
             run=config_provider("run", "name"),
         ),
+
+rule pull_some:
+    params:
+        cluster = f"{config['remote']['ssh']}:{config['remote']['path']}",
+    shell:
+        """
+        rsync -uvarh --no-g --ignore-missing-args --files-from=.sync-receive {params.cluster}/ . 
+        """

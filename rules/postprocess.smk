@@ -148,6 +148,33 @@ if config["foresight"] != "perfect":
             "../scripts/plot_balance_map.py"
 
 
+    rule plot_interactive_map:
+        params:
+            plotting=config_provider("plotting"),
+        input:
+            network=RESULTS
+            + "networks/base_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.nc",
+            regions=resources("regions_onshore_base_s_{clusters}.geojson"),
+        output:
+            RESULTS
+            + "maps/interactive/base_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}-interactive_map_{carrier}.html",
+        threads: 1
+        resources:
+            mem_mb=8000,
+        log:
+            RESULTS
+            + "logs/plot_interactive_map/base_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}_{carrier}.log",
+        benchmark:
+            (
+                RESULTS
+                + "benchmarks/plot_interactive_map/base_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}_{carrier}"
+            )
+        conda:
+            "../envs/environment.yaml"
+        script:
+            "../scripts/plot_interactive_map.py"
+
+
 if config["foresight"] == "perfect":
 
     def output_map_year(w):
