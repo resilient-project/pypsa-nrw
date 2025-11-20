@@ -816,6 +816,48 @@ rule export_ariadne_variables:
         "scripts/pypsa-de/export_ariadne_variables.py"
 
 
+rule plot_industry_sankey_forecast:
+    input:
+        mapping="data/forecast_industry/mapping.csv",
+        demand="data/forecast_industry/Orientierungsszenario_Strom/energy_demand.csv",
+    output:
+        "results/graphs/industry_sankey_forecast_{year}.pdf"
+    conda:
+        "envs/environment.yaml"
+    shell:
+        "python scripts/plot_industry_sankey_forecast.py {input.mapping} {input.demand} {wildcards.year} {output}"
+
+
+rule plot_industry_sankey:
+    input:
+        production="data/industrial_production_per_country_tomorrow_2025.csv",
+        ratios="data/industry_sector_ratios_2025.csv",
+    output:
+        "results/graphs/industry_sankey_pypsa_{year}.pdf"
+    conda:
+        "envs/environment.yaml"
+    shell:
+        (
+            "python scripts/plot_industry_sankey_pypsa.py "
+            "{input.production} {input.ratios} DE {wildcards.year} {output}"
+        )
+
+rule plot_industry_input_comparison:
+    input:
+        demand_file_forecast="data/forecast_industry/Orientierungsszenario_Strom/energy_demand.csv",
+        production_file_pypsa_2025="data/industrial_production_per_country_tomorrow_2025.csv",
+        ratios_file_pypsa_2025="data/industry_sector_ratios_2025.csv",
+        production_file_pypsa_2045="data/industrial_production_per_country_tomorrow_2045.csv",
+        ratios_file_pypsa_2045="data/industry_sector_ratios_2045.csv",
+    output:
+        "results/graphs/industry_input_comparison_forecast.pdf",
+        "results/graphs/industry_input_comparison_pypsa.pdf",
+    conda:
+        "envs/environment.yaml"
+    script:
+        "scripts/plot_industry_input_comparison.py"
+
+
 rule plot_ariadne_variables:
     params:
         reference_scenario=config_provider("pypsa-de", "reference_scenario"),
