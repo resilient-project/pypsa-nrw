@@ -47,7 +47,7 @@ if __name__ == "__main__":
             opts="",
             sector_opts="",
             planning_horizons="2035",
-            carrier="H2",
+            carrier="co2_stored",
             configfiles=["config/config.nrw-workshop.yaml"],
             run="forecast-co2-pipelines-min-ccs",
         )
@@ -157,7 +157,7 @@ if __name__ == "__main__":
         arrow_size_factor=2.5,
         tooltip=True,
         auto_scale=True,
-        branch_width_max=50,
+        branch_width_max=8,
         bus_size_max=15000,
         map_style="road",
     )
