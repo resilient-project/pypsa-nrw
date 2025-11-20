@@ -49,8 +49,6 @@ foresight: myopic
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#scenario
 # Wildcard docs in https://pypsa-eur.readthedocs.io/en/latest/wildcards.html
 scenario:
-  ll:
-  - vopt
   clusters:
   - adm #current options: 27, 49
   opts:
@@ -104,6 +102,27 @@ renewable:
   hydro:
     cutout: europe-2019-sarah3-era5
 
+electricity:
+  transmission_limit: v1.1
+
+# docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#transmission_projects
+transmission_projects:
+  enable: true
+  include:
+    nep: true
+    manual: true
+    tyndp2020: true
+  skip:
+  - upgraded_lines
+  - upgraded_links
+  status:
+  - under_construction
+  - in_permitting
+  - confirmed
+    #- planned_not_yet_permitted
+    #- under_consideration
+  new_link_capacity: zero #keep or zero
+
 lines:
   dynamic_line_rating:
     cutout: europe-2019-sarah3-era5
@@ -112,7 +131,7 @@ clustering:
   mode: administrative
   administrative:
     level: 0
-    BE: 2
+    BE: 1
     DE: 1
     NL: 1
     DEA: 3
@@ -134,7 +153,7 @@ wasserstoff_kernnetz:
 
 sector:
   regional_co2_sequestration_potential:
-    enable: false
+    enable: true
     attribute:
     - conservative estimate Mt
     - conservative estimate GAS Mt
@@ -147,12 +166,12 @@ sector:
   co2_sequestration_potential:
     2020: 0
     2025: 0
-    2030: 137
+    2030: 40
     2035: 137
-    2040: 137
-    2045: 137
-    2050: 137
-  co2_sequestration_cost: 30
+    2040: 180
+    2045: 250
+    2050: 250
+  co2_sequestration_cost: 35
   co2_sequestration_lifetime: 50
   co2_spatial: true
   co2_network: false

@@ -559,6 +559,22 @@ rule modify_district_heat_share:
         "scripts/pypsa-de/modify_district_heat_share.py"
 
 
+def input_industrial_demand(w):
+    if config_provider("industry", "forecast_industry", "enable")(w):
+        scenario = config_provider("industry", "forecast_industry", "forecast_scenario")(w)
+        return {
+            "industrial_demand": resources(
+                "industrial_energy_demand_base_s_{clusters}_{planning_horizons}_forecast_" + f"{scenario}.csv"
+            )
+        }
+    else:
+        return {
+            "industrial_demand": resources(
+                "industrial_energy_demand_base_s_{clusters}_{planning_horizons}.csv"
+            )
+        }
+
+
 rule modify_prenetwork:
     params:
         efuel_export_ban=config_provider("solving", "constraints", "efuel_export_ban"),
@@ -594,6 +610,7 @@ rule modify_prenetwork:
         bev_energy=config_provider("sector", "bev_energy"),
         bev_dsm_availability=config_provider("sector", "bev_dsm_availability"),
     input:
+        unpack(input_industrial_demand),
         costs_modifications="ariadne-data/costs_{planning_horizons}-modifications.csv",
         network=resources(
             "networks/base_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}_brownfield.nc"
@@ -609,9 +626,6 @@ rule modify_prenetwork:
         ),
         biomass_potentials=resources(
             "biomass_potentials_s_{clusters}_{planning_horizons}.csv"
-        ),
-        industrial_demand=resources(
-            "industrial_energy_demand_base_s_{clusters}_{planning_horizons}.csv"
         ),
         pop_weighted_energy_totals=resources(
             "pop_weighted_energy_totals_s_{clusters}.csv"
@@ -1010,3 +1024,11 @@ rule ariadne_report_only:
             RESULTS + "ariadne/report/elec_price_duration_curve.pdf",
             run=config_provider("run", "name"),
         ),
+
+rule pull_some:
+    params:
+        cluster = f"{config['remote']['ssh']}:{config['remote']['path']}",
+    shell:
+        """
+        rsync -uvarh --no-g --ignore-missing-args --files-from=.sync-receive {params.cluster}/ . 
+        """

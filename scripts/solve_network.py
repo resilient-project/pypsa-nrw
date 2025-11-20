@@ -1402,10 +1402,10 @@ if __name__ == "__main__":
             "solve_sector_network_myopic",
             opts="",
             clusters="adm",
-            configfiles="config/config.nrw.yaml",
+            configfiles="config/config.nrw-workshop.yaml",
             sector_opts="",
             planning_horizons="2035",
-            run="KN2045_Mix"
+            run="forecast-co2-pipelines-min-ccs"
         )
     configure_logging(snakemake)
     set_scenario_config(snakemake)

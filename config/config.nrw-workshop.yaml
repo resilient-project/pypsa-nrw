@@ -10,8 +10,12 @@ remote:
 run:
   prefix: nrw-workshop
   name:
-  - KN2045_Mix_co2-pipelines
-  - KN2045_Mix_no-co2-pipelines
+  - co2-pipelines-min-ccs
+  - delayed-co2-pipelines-min-ccs  
+  - co2-pipelines-max-ccs
+  - forecast-co2-pipelines-min-ccs
+  - forecast-delayed-co2-pipelines-min-ccs
+  - forecast-co2-pipelines-max-ccs
   scenarios:
     enable: true
     manual_file: config/scenarios.manual.yaml
@@ -45,8 +49,6 @@ foresight: myopic
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#scenario
 # Wildcard docs in https://pypsa-eur.readthedocs.io/en/latest/wildcards.html
 scenario:
-  ll:
-  - vopt
   clusters:
   - adm #current options: 27, 49
   opts:
@@ -100,6 +102,27 @@ renewable:
   hydro:
     cutout: europe-2019-sarah3-era5
 
+electricity:
+  transmission_limit: v1.1
+
+# docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#transmission_projects
+transmission_projects:
+  enable: true
+  include:
+    nep: true
+    manual: true
+    tyndp2020: true
+  skip:
+  - upgraded_lines
+  - upgraded_links
+  status:
+  - under_construction
+  - in_permitting
+  - confirmed
+    #- planned_not_yet_permitted
+    #- under_consideration
+  new_link_capacity: zero #keep or zero
+
 lines:
   dynamic_line_rating:
     cutout: europe-2019-sarah3-era5
@@ -108,12 +131,12 @@ clustering:
   mode: administrative
   administrative:
     level: 0
-    BE: 2
+    BE: 1
     DE: 1
     NL: 1
     DEA: 3
   temporal:
-    resolution_sector: 365H
+    resolution_sector: 365H # CHANGE to 2190seg instead of 365H
 
 wasserstoff_kernnetz:
   enable: true
@@ -130,7 +153,7 @@ wasserstoff_kernnetz:
 
 sector:
   regional_co2_sequestration_potential:
-    enable: false
+    enable: true
     attribute:
     - conservative estimate Mt
     - conservative estimate GAS Mt
@@ -143,12 +166,12 @@ sector:
   co2_sequestration_potential:
     2020: 0
     2025: 0
-    2030: 137
+    2030: 40
     2035: 137
-    2040: 137
-    2045: 137
-    2050: 137
-  co2_sequestration_cost: 30
+    2040: 180
+    2045: 250
+    2050: 250
+  co2_sequestration_cost: 35
   co2_sequestration_lifetime: 50
   co2_spatial: true
   co2_network: false
@@ -179,8 +202,8 @@ sector:
       "N-Lites": 5 # https://ec.europa.eu/assets/cinea/PCI/files/PMIFiche_13.13_1st_PCI_PMI_list.pdf
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#solving
 solving:
-  runtime: 12h
-  mem_mb: 70000 #30000 is OK for 22 nodes, 365H; 140000 for 22 nodes 3H; 400000 for 44 nodes 3H
+  runtime: 45h
+  mem_mb: 180000 #30000 is OK for 22 nodes, 365H; 140000 for 22 nodes 3H; 400000 for 44 nodes 3H
   options:
     assign_all_duals: true
     load_shedding: false

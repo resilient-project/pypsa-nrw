@@ -11,6 +11,7 @@ import os
 from itertools import product
 from types import SimpleNamespace
 
+import geopandas as gpd
 import networkx as nx
 import numpy as np
 import pandas as pd
@@ -204,6 +205,7 @@ def define_spatial(nodes, options):
         spatial.oil.shipping = nodes + " shipping oil"
         spatial.oil.agriculture_machinery = nodes + " agriculture machinery oil"
         spatial.oil.land_transport = nodes + " land transport oil"
+        spatial.oil.oil_for_industry = nodes + " oil for industry"
     else:
         spatial.oil.demand_locations = ["EU"]
         spatial.oil.naphtha = ["EU naphtha for industry"]
@@ -212,6 +214,7 @@ def define_spatial(nodes, options):
         spatial.oil.shipping = ["EU shipping oil"]
         spatial.oil.agriculture_machinery = ["EU agriculture machinery oil"]
         spatial.oil.land_transport = ["EU land transport oil"]
+        spatial.oil.oil_for_industry = ["EU oil for industry"]
 
     # uranium
     spatial.uranium = SimpleNamespace()
@@ -379,10 +382,10 @@ def add_lifetime_wind_solar(n, costs):
         n.generators.loc[gen_i, "lifetime"] = costs.at[carrier, "lifetime"]
 
 
-def haversine(p, n):
+def haversine(p, n, factor=1.5):
     coord0 = n.buses.loc[p.bus0, ["x", "y"]].values
     coord1 = n.buses.loc[p.bus1, ["x", "y"]].values
-    return 1.5 * haversine_pts(coord0, coord1)
+    return factor * haversine_pts(coord0, coord1)
 
 
 def create_network_topology(
@@ -794,7 +797,7 @@ def add_eu_bus(n, x=-5.5, y=46):
     n.add("Carrier", "none")
 
 
-def add_co2_tracking(n, costs, options, sequestration_potential_file=None):
+def add_co2_tracking(n, costs, options, sequestration_potential_file=None, planning_horizons=None):
     """
     Add CO2 tracking components to the network including atmospheric CO2,
     CO2 storage, and sequestration infrastructure.
@@ -816,7 +819,7 @@ def add_co2_tracking(n, costs, options, sequestration_potential_file=None):
         - co2_sequestration_lifetime: float
         - co2_vent: bool
     sequestration_potential_file : str, optional
-        Path to CSV file containing regional CO2 sequestration potentials.
+        Path to geojson file containing regional CO2 sequestration potentials.
         Required if options['regional_co2_sequestration_potential']['enable'] is True.
 
     Returns
@@ -853,6 +856,8 @@ def add_co2_tracking(n, costs, options, sequestration_potential_file=None):
     n.add(
         "Bus",
         spatial.co2.nodes,
+        x=n.buses.loc[spatial.co2.locations, "x"].values,
+        y=n.buses.loc[spatial.co2.locations, "y"].values,
         location=spatial.co2.locations,
         carrier="co2 stored",
         unit="t_co2",
@@ -863,36 +868,11 @@ def add_co2_tracking(n, costs, options, sequestration_potential_file=None):
         spatial.co2.nodes,
         e_nom_extendable=True,
         capital_cost=costs.at["CO2 storage tank", "capital_cost"],
-        overnight_cost=costs.at["CO2 storage tank", "investment"],
         carrier="co2 stored",
         e_cyclic=True,
         bus=spatial.co2.nodes,
     )
     n.add("Carrier", "co2 stored")
-
-    # this tracks CO2 sequestered, e.g. underground
-    sequestration_buses = pd.Index(spatial.co2.nodes).str.replace(
-        " stored", " sequestered"
-    )
-    n.add(
-        "Bus",
-        sequestration_buses,
-        location=spatial.co2.locations,
-        carrier="co2 sequestered",
-        unit="t_co2",
-    )
-
-    n.add(
-        "Link",
-        sequestration_buses,
-        bus0=spatial.co2.nodes,
-        bus1=sequestration_buses,
-        marginal_cost=options["co2_sequestration_cost"],
-        capital_cost=0.1, # TODO: needed?
-        carrier="co2 sequestered",
-        efficiency=1.0,
-        p_nom_extendable=True,
-    )
 
     if options["regional_co2_sequestration_potential"]["enable"]:
         if sequestration_potential_file is None:
@@ -900,36 +880,128 @@ def add_co2_tracking(n, costs, options, sequestration_potential_file=None):
                 "sequestration_potential_file must be provided when "
                 "regional_co2_sequestration_potential is enabled"
             )
+
         upper_limit = (
-            options["regional_co2_sequestration_potential"]["max_size"] * 1e3
+            options["regional_co2_sequestration_potential"]["max_size"]
         )  # Mt
         annualiser = options["regional_co2_sequestration_potential"]["years_of_storage"]
-        df = pd.read_csv(sequestration_potential_file, index_col=0)
-        if df.shape == (1, 1):
-            # if only one value, manually convert to a Series
-            e_nom_max = pd.Series(df.iloc[0, 0], index=df.index)
-        else:
-            e_nom_max = df.squeeze()
 
-        e_nom_max = (
-            e_nom_max.reindex(spatial.co2.locations)
+        # Regional potential
+        sequestration_potential = gpd.read_file(sequestration_potential_file).set_index("cluster")
+        offshore_index = sequestration_potential.index
+
+        sequestration_potential["e_nom_max"] = (
+            sequestration_potential["total_estimate_Mt"]
             .fillna(0.0)
-            .clip(upper=upper_limit)
             .mul(1e6)
-            / annualiser
-        )  # t
-        e_nom_max = e_nom_max.rename(index=lambda x: x + " co2 sequestered")
+            .div(annualiser)
+            .clip(upper=upper_limit*1e6)
+        )  # tpa
+        sequestration_potential.index = sequestration_potential.index + " co2 sequestered"
+       
+        # Add store buses
+        n.add(
+            "Bus",
+            sequestration_potential.index,
+            x=sequestration_potential.x,
+            y=sequestration_potential.y,
+            carrier="co2 sequestered",
+            unit="t_co2"
+        )
+
+        sequestration_potential.index = sequestration_potential.index.str.replace("sequestered", "stored")
+
+        # Add sequestration buses
+        n.add(
+            "Bus",
+            sequestration_potential.index,
+            x=sequestration_potential.x,
+            y=sequestration_potential.y,
+            location=sequestration_potential.index,
+            carrier="co2 stored",
+            unit="t_co2"
+        )
+
+        n.add(
+            "Link",
+            offshore_index,
+            bus0=offshore_index + " co2 stored",
+            bus1=offshore_index + " co2 sequestered",
+            marginal_cost=options["co2_sequestration_cost"],
+            capital_cost=0.1, # TODO: needed?
+            carrier="co2 sequestered",
+            efficiency=1.0,
+            p_nom_extendable=True,
+        )
+
+        # Add links between sequestration sites and closest onshore bus
+        sequestration_links = pd.DataFrame(columns=["bus0", "bus1", "length"])
+        sequestration_links["bus0"] = sequestration_potential["bus_onshore"] + " co2 stored"
+        sequestration_links["bus1"] = sequestration_potential.index
+
+        length_factor = 1.25
+        sequestration_links["length"] = sequestration_links.apply(haversine, axis=1, args=(n,length_factor))
+
+        sequestration_links.index = sequestration_links["bus1"] + " pipeline"
+
+        n.add(
+            "Link",
+            sequestration_links.index,
+            **sequestration_links,
+            carrier="CO2 pipeline",
+            efficiency=1.0,
+            p_nom_extendable=True,
+            capital_cost=costs.at["CO2 submarine pipeline", "capital_cost"] * sequestration_links["length"],
+            underwater_fraction=1,
+            lifetime=costs.at["CO2 pipeline", "lifetime"],
+        )
+
+        sequestration_potential.index = sequestration_potential.index.str.replace("stored", "sequestered")
+
+        # Note moved capital costs to OPEX in links connecting CO2 stores to sequestration sites
+        n.add(
+            "Store",
+            sequestration_potential.index,
+            e_nom_extendable=False,
+            e_nom=sequestration_potential["e_nom_max"],
+            marginal_cost=-0.1,
+            bus=sequestration_potential.index,
+            lifetime=options["co2_sequestration_lifetime"],
+            carrier="co2 sequestered",
+            build_year=planning_horizons[0],
+        )
+
     else:
+        # this tracks CO2 sequestered, e.g. underground
+        sequestration_buses = pd.Index(spatial.co2.nodes).str.replace(
+            " stored", " sequestered"
+        )
+        n.add(
+            "Bus",
+            sequestration_buses,
+            location=spatial.co2.locations,
+            carrier="co2 sequestered",
+            unit="t_co2",
+        )
+
+        n.add(
+            "Link",
+            sequestration_buses,
+            bus0=spatial.co2.nodes,
+            bus1=sequestration_buses,
+            carrier="co2 sequestered",
+            efficiency=1.0,
+            p_nom_extendable=True,
+        )
+
         e_nom_max = np.inf
 
-    # TODO: Originally, they are always added
-    if options["regional_co2_sequestration_potential"]["enable"]:
         n.add(
             "Store",
             sequestration_buses,
-            e_nom_extendable=False,
-            e_nom=e_nom_max,
-            overnight_cost=pd.NA,
+            e_nom_extendable=True,
+            e_nom_max=e_nom_max,
+            capital_cost=options["co2_sequestration_cost"],
             marginal_cost=-0.1,
             bus=sequestration_buses,
             lifetime=options["co2_sequestration_lifetime"],
@@ -6573,9 +6645,9 @@ if __name__ == "__main__":
             opts="",
             clusters="adm",
             sector_opts="",
-            planning_horizons="2045",
-            run="KN2045_Mix",
-            configfiles=["config/config.nrw.yaml"],
+            planning_horizons="2035",
+            run="KN2045_Mix_co2-pipelines",
+            configfiles=["config/config.nrw-workshop.yaml"],
         )
 
     configure_logging(snakemake)  # pylint: disable=E0606
@@ -6650,6 +6722,7 @@ if __name__ == "__main__":
         costs,
         options,
         sequestration_potential_file=snakemake.input.sequestration_potential,
+        planning_horizons=snakemake.params.planning_horizons,
     )
 
     add_generation(
