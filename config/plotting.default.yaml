@@ -20,7 +20,7 @@ plotting:
     x: -5.5
     y: 46.
   costs_max: 1000
-  costs_threshold: 1
+  costs_threshold: 0.001
   energy_max: 20000
   energy_min: -20000
   energy_threshold: 50.
@@ -325,6 +325,7 @@ plotting:
     oil: '#c9c9c9'
     oil primary: '#d2d2d2'
     oil refining: '#e6e6e6'
+    oil for industry: '#848484'
     imported oil: '#a3a3a3'
     oil boiler: '#adadad'
     residential rural oil boiler: '#a9a9a9'

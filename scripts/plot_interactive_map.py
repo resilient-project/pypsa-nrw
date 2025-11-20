@@ -49,7 +49,7 @@ if __name__ == "__main__":
             planning_horizons="2035",
             carrier="H2",
             configfiles=["config/config.nrw-workshop.yaml"],
-            run="co2-pipelines-min-ccs",
+            run="forecast-co2-pipelines-min-ccs",
         )
 
     configure_logging(snakemake)
