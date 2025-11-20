@@ -53,6 +53,7 @@ TARGET_CARRIERS = [
     "methanol",
     "process emission",
     "process emission from feedstock",
+    "oil", # new implementation for pypsa-nrw
 ]
 NODE_COL = "TWh/a (MtCO2/a)"
 YEAR_MIN, YEAR_MAX = 1900, 2100
@@ -145,9 +146,9 @@ if __name__ == "__main__":
             "build_industrial_energy_demand_per_node_forecast",    
             industry_scenario="Orientierungsszenario_Strom",
             clusters="adm",
-            planning_horizons="2045",
-            run="KN2045_Mix",
-            configfiles=["config/config.nrw.yaml"],
+            planning_horizons="2040",
+            run="forecast-co2-pipelines-min-ccs",
+            configfiles=["config/config.nrw-workshop.yaml"],
         )
     
     configure_logging(snakemake)  # pylint: disable=E0606
@@ -387,6 +388,10 @@ if __name__ == "__main__":
     # Merge with original nodal industry and only overwrite those from mapped
     industrial_energy_demand_per_node = pd.read_csv(snakemake.input.industrial_energy_demand_per_node)
     industrial_energy_demand_per_node.set_index(NODE_COL, inplace=True)
+
+    # if oil not in columns, add it with zeros
+    if "oil" not in industrial_energy_demand_per_node.columns:
+        industrial_energy_demand_per_node["oil"] = 0.0
     
     forecast_industry = industrial_energy_demand_per_node.copy()
     forecast_industry.update(mapped)
