@@ -83,6 +83,19 @@ rule plot_balance_maps:
         ),
 
 
+rule plot_interactive_maps:
+    input:
+        lambda w: expand(
+            (
+                RESULTS
+                + "maps/interactive/base_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}-interactive_map_{carrier}.html"
+            ),
+            **config["scenario"],
+            run=config["run"]["name"],
+            carrier=config_provider("plotting", "interactive_map", "bus_carriers")(w),
+        ),
+
+
 rule plot_statistics:
     input:
         [

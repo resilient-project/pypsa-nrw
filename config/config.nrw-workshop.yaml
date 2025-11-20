@@ -339,9 +339,4 @@ plotting:
   - rural heat
   carrier_groups:
     electricity: [AC, low_voltage]
-  balance_map:
-    bus_carriers:
-    - AC
-    - H2
-    - co2_stored
 

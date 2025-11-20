@@ -101,11 +101,7 @@ plotting:
     bus_carriers:
     - AC
     - H2
-    - gas
-    - oil
-    - methanol
-    - co2 stored
-    - urban central heat
+    - co2_stored
     AC:
       unit: TWh
       unit_conversion: 1_000_000
@@ -240,6 +236,52 @@ plotting:
       - 200
       - 100
       branch_sizes:
+
+  interactive_map:
+    enable: true
+    bus_carriers:
+    - AC
+    - co2_stored # underscore only needed for slurm environment
+    - H2
+    AC:
+      conversion: 1_000_000 # division
+      region_cmap: Greens
+      region_alpha: 0.8
+      region_unit: €/MWh
+      region_vmin: 30
+      region_vmax: 100
+      branch_color: darkseagreen
+      arrow_size_factor: 2
+      bus_size_max: 15000
+      branch_width_max: 20
+      map_style: road
+      tooltip: true
+    H2:
+      conversion: 1_000_000 # division
+      region_cmap: Blues
+      region_alpha: 0.8
+      region_unit: €/MWh
+      region_vmin: 0
+      region_vmax: 120
+      branch_color: pink
+      arrow_size_factor: 2
+      bus_size_max: 20000
+      branch_width_max: 45
+      map_style: road
+      tooltip: true
+    co2_stored:
+      conversion: 1_000_000 # division
+      region_cmap: Purples
+      region_alpha: 0.8
+      region_unit: €/t CO2
+      region_vmin: 0
+      region_vmax: 150
+      branch_color: orange
+      arrow_size_factor: 2
+      bus_size_max: 15000
+      branch_width_max: 7
+      map_style: road
+      tooltip: true
 
   nice_names:
     OCGT: "Open-Cycle Gas"

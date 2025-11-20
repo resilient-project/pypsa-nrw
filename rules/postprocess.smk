@@ -150,7 +150,9 @@ if config["foresight"] != "perfect":
 
     rule plot_interactive_map:
         params:
-            plotting=config_provider("plotting"),
+            settings=lambda w: config_provider(
+                "plotting", "interactive_map", w.carrier
+            )
         input:
             network=RESULTS
             + "networks/base_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.nc",

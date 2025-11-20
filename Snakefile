@@ -131,6 +131,17 @@ rule all:
             run=config["run"]["name"],
             carrier=config_provider("plotting", "balance_map", "bus_carriers")(w),
         ),
+        lambda w: expand(
+            (
+                RESULTS
+                + "maps/interactive/base_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}-interactive_map_{carrier}.html"
+                if config["plotting"]["interactive_map"].get("enable", False)
+                else []
+            ),
+            **config["scenario"],
+            run=config["run"]["name"],
+            carrier=config_provider("plotting", "interactive_map", "bus_carriers")(w),
+        ),
         expand(
             RESULTS
             + "graphics/balance_timeseries/s_{clusters}_{opts}_{sector_opts}_{planning_horizons}",

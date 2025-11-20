@@ -5,19 +5,13 @@
 Create interactive maps for the defined carriers.
 """
 
-link_color = "pink"
-branch_width_factor = 0.5e-6
-v_min = 0
-v_max = 150
-conversion = 1e6  # from MWh to TWh
-
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import geopandas as gpd
 import pypsa
 import pydeck as pdk
-import yaml
 
+from pypsa.plot.maps.interactive import PydeckPlotter
 from pypsa.statistics import get_transmission_carriers
 
 from scripts._helpers import (
@@ -29,9 +23,22 @@ from scripts._helpers import (
 
 from scripts.add_electricity import sanitize_carriers
 
+VALID_MAP_STYLES = PydeckPlotter.VALID_MAP_STYLES
 
-def price_to_color(price, alpha=1):
-    color = cmap(norm(price))  # RGBA in 0-1
+
+def price_to_color(
+    price, 
+    cmap,
+    vmin,
+    vmax,    
+    alpha=1):
+
+    cmap = cmap or "Reds"    
+
+    ccmap = plt.get_cmap(cmap) 
+    norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
+
+    color = ccmap(norm(price))  # RGBA in 0-1
     rgb = [round(c * 255) for c in color[:3]]  # only RGB
     a = round(alpha * 255)
     return rgb + [a]
@@ -56,6 +63,23 @@ if __name__ == "__main__":
     set_scenario_config(snakemake)
     update_config_from_wildcards(snakemake.config, snakemake.wildcards)
 
+    # Interactive map settings
+    settings = snakemake.params.settings
+    conversion = settings.get("conversion") or 1
+    region_cmap = settings.get("region_cmap") or "Reds"
+    region_alpha = settings.get("region_alpha") or 0.7
+    region_unit = settings.get("region_unit") or ""
+    branch_color = settings.get("branch_color") or "orange"
+    arrow_size_factor = settings.get("arrow_size_factor") or 1.5 # PyPSA default
+    bus_size_max = settings.get("bus_size_max") or 10000  # PyPSA default
+    branch_width_max = settings.get("branch_width_max") or 10 # PyPSA default
+    map_style = (
+        str(settings.get("map_style")) or "road"
+    ).lower()
+    map_style = VALID_MAP_STYLES.get(map_style, "road")
+    tooltip = settings.get("tooltip") or True
+
+    # Import
     n = pypsa.Network(snakemake.input.network)
     sanitize_carriers(n, snakemake.config)
     pypsa.options.params.statistics.round = 6
@@ -63,7 +87,6 @@ if __name__ == "__main__":
     pypsa.options.params.statistics.nice_names = False
 
     regions = gpd.read_file(snakemake.input.regions).set_index("name")
-    config = snakemake.params.plotting
     carrier = snakemake.wildcards.carrier
     carrier = carrier.replace("_", " ")
 
@@ -103,8 +126,14 @@ if __name__ == "__main__":
             lambda x: x.replace("-reversed", "")
         )
         flow = flow[~flow_reversed_mask].subtract(flow_reversed, fill_value=0)
-    # drop first level index (component)
-    flow.index = flow.index.droplevel(0)
+
+    # only line first index
+    line_flow = flow.loc[flow.index.get_level_values(0).str.contains("Line")].copy().droplevel(0)
+    link_flow = flow.loc[flow.index.get_level_values(0).str.contains("Link")].copy().droplevel(0)
+
+    branch_components = ["Link"]
+    if carrier == "AC":
+        branch_components = ["Line", "Link"]
 
     ### Prices
     buses = n.buses.query("carrier in @carrier").index
@@ -117,20 +146,28 @@ if __name__ == "__main__":
         co2_price = n.global_constraints.loc["CO2Limit", "mu"]
         weighted_prices = weighted_prices - co2_price
 
+    # Set vmin and vmax for color mapping
+    region_vmin = settings.get("region_vmin")
+    region_vmax = settings.get("region_vmax")
 
-    # cmap
-    cmap = plt.get_cmap("Blues")
-    norm = mcolors.Normalize(vmin=v_min, vmax=v_max)
+    region_vmin = weighted_prices.min() if region_vmin is None else region_vmin
+    region_vmax = weighted_prices.max() if region_vmax is None else region_vmax
 
     # Add prices to regions
     regions["price"] = weighted_prices.reindex(regions.index).fillna(0)
 
-    regions["color"] = regions["price"].apply(price_to_color, alpha=0.7)
+    regions["color"] = regions["price"].apply(
+        price_to_color, 
+        cmap=region_cmap,
+        vmin=region_vmin,
+        vmax=region_vmax,
+        alpha=region_alpha,
+    )
 
     # Create tooltips
     regions["tooltip_html"] = (
         "<b>" + regions.index + "</b><br>"
-        +"<b>Weighted Price:</b> " + regions["price"].round(2).astype(str) + " €/MWh"
+        +"<b>Weighted Price:</b> " + regions["price"].round(2).astype(str) + " " + region_unit
     )
     # regions["tooltip_html"] = regions["price"].round(2).astype(str) 
     # Create layer
@@ -147,19 +184,21 @@ if __name__ == "__main__":
     )
 
     map = n.explore(
-        branch_components=["Link"],
-        branch_width_factor=branch_width_factor,
+        branch_components=branch_components,
         bus_size=bus_size.div(conversion),
         bus_split_circle=True,
-        link_width=flow.div(conversion),
-        link_flow=flow.div(conversion),
-        link_color=link_color,
-        arrow_size_factor=2.5,
-        tooltip=True,
+        line_width=line_flow.div(conversion),
+        line_flow=line_flow.div(conversion),
+        line_color="rosybrown",
+        link_width=link_flow.div(conversion),
+        link_flow=link_flow.div(conversion),
+        link_color=branch_color,
+        arrow_size_factor=arrow_size_factor,
+        tooltip=tooltip,
         auto_scale=True,
-        branch_width_max=8,
-        bus_size_max=15000,
-        map_style="road",
+        branch_width_max=branch_width_max,
+        bus_size_max=bus_size_max,
+        map_style=map_style,
     )
 
     map.layers.insert(0, regions_layer)
