@@ -13,6 +13,9 @@ run:
   - co2-pipelines-min-ccs
   - delayed-co2-pipelines-min-ccs  
   - co2-pipelines-max-ccs
+  - forecast-co2-pipelines-min-ccs
+  - forecast-delayed-co2-pipelines-min-ccs
+  - forecast-co2-pipelines-max-ccs
   scenarios:
     enable: true
     manual_file: config/scenarios.manual.yaml
