@@ -205,6 +205,7 @@ def define_spatial(nodes, options):
         spatial.oil.shipping = nodes + " shipping oil"
         spatial.oil.agriculture_machinery = nodes + " agriculture machinery oil"
         spatial.oil.land_transport = nodes + " land transport oil"
+        spatial.oil.oil_for_industry = nodes + " oil for industry"
     else:
         spatial.oil.demand_locations = ["EU"]
         spatial.oil.naphtha = ["EU naphtha for industry"]
@@ -213,6 +214,7 @@ def define_spatial(nodes, options):
         spatial.oil.shipping = ["EU shipping oil"]
         spatial.oil.agriculture_machinery = ["EU agriculture machinery oil"]
         spatial.oil.land_transport = ["EU land transport oil"]
+        spatial.oil.oil_for_industry = ["EU oil for industry"]
 
     # uranium
     spatial.uranium = SimpleNamespace()

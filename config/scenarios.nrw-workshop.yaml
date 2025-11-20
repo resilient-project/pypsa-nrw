@@ -5,8 +5,6 @@ co2-pipelines-min-ccs:
       build_year: 2030
     methanol:
       methanol_reforming_cc: false
-      biomass_to_methanol: true
-      biomass_to_methanol_cc: false
     biogas_upgrading: true
     biogas_upgrading_cc: false
     biosng: true
@@ -67,8 +65,6 @@ delayed-co2-pipelines-min-ccs:
       build_year: 2040
     methanol:
       methanol_reforming_cc: false
-      biomass_to_methanol: true
-      biomass_to_methanol_cc: false
     biogas_upgrading: true
     biogas_upgrading_cc: false
     biosng: true
@@ -129,8 +125,6 @@ co2-pipelines-max-ccs:
       build_year: 2030
     methanol:
       methanol_reforming_cc: true
-      biomass_to_methanol: true
-      biomass_to_methanol_cc: true
     biogas_upgrading: true
     biogas_upgrading_cc: true
     biosng: true
