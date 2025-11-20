@@ -1405,7 +1405,7 @@ if __name__ == "__main__":
             configfiles="config/config.nrw-workshop.yaml",
             sector_opts="",
             planning_horizons="2035",
-            run="KN2045_Mix_co2-pipelines"
+            run="forecast-co2-pipelines-min-ccs"
         )
     configure_logging(snakemake)
     set_scenario_config(snakemake)

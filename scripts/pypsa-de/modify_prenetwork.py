@@ -1275,12 +1275,13 @@ if __name__ == "__main__":
         snakemake = mock_snakemake(
             "modify_prenetwork",
             simpl="",
-            clusters=27,
+            clusters="adm",
             opts="",
-            ll="vopt",
-            sector_opts="none",
-            planning_horizons="2025",
-            run="KN2045_Mix",
+            ll="v1.1",
+            sector_opts="",
+            planning_horizons="2035",
+            run="forecast-co2-pipelines-min-ccs",
+            configfiles=["config/config.nrw-workshop.yaml"]
         )
 
     configure_logging(snakemake)
