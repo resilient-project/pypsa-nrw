@@ -133,7 +133,7 @@ clustering:
     NL: 1
     DEA: 3
   temporal:
-    resolution_sector: 365H
+    resolution_sector: 365H # CHANGE to 2190seg instead of 365H
 
 wasserstoff_kernnetz:
   enable: true
@@ -199,8 +199,8 @@ sector:
       "N-Lites": 5 # https://ec.europa.eu/assets/cinea/PCI/files/PMIFiche_13.13_1st_PCI_PMI_list.pdf
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#solving
 solving:
-  runtime: 12h
-  mem_mb: 70000 #30000 is OK for 22 nodes, 365H; 140000 for 22 nodes 3H; 400000 for 44 nodes 3H
+  runtime: 45h
+  mem_mb: 180000 #30000 is OK for 22 nodes, 365H; 140000 for 22 nodes 3H; 400000 for 44 nodes 3H
   options:
     assign_all_duals: true
     load_shedding: false
