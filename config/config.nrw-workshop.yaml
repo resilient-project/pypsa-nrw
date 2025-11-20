@@ -203,7 +203,7 @@ sector:
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#solving
 solving:
   runtime: 45h
-  mem_mb: 180000 #30000 is OK for 22 nodes, 365H; 140000 for 22 nodes 3H; 400000 for 44 nodes 3H
+  mem_mb: 220000 #30000 is OK for 22 nodes, 365H; 140000 for 22 nodes 3H; 400000 for 44 nodes 3H
   options:
     assign_all_duals: true
     load_shedding: false
