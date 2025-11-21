@@ -40,7 +40,7 @@ DEMAND_COLS = [
     "Subsector",
     "Application",
 ]
-TARGET_CARRIERS = [
+ENERGY_CARRIERS = [
     "electricity",
     "coal",
     "coke",
@@ -55,6 +55,11 @@ TARGET_CARRIERS = [
     "process emission from feedstock",
     "oil", # new implementation for pypsa-nrw
 ]
+PROCESS_EMISSION_CARRIERS = [
+    "process emission",
+    "process emission from feedstock",
+]
+TARGET_CARRIERS = ENERGY_CARRIERS + PROCESS_EMISSION_CARRIERS
 NODE_COL = "TWh/a (MtCO2/a)"
 YEAR_MIN, YEAR_MAX = 1900, 2100
 
@@ -146,7 +151,7 @@ if __name__ == "__main__":
             "build_industrial_energy_demand_per_node_forecast",    
             industry_scenario="Orientierungsszenario_Strom",
             clusters="adm",
-            planning_horizons="2040",
+            planning_horizons="2035",
             run="forecast-co2-pipelines-min-ccs",
             configfiles=["config/config.nrw-workshop.yaml"],
         )
@@ -193,10 +198,17 @@ if __name__ == "__main__":
         )
     
     ied_forecast = ied_forecast[param_cols + [current_electricity_year, year]]
+    ipe_forecast = ipe_forecast[param_cols + [current_electricity_year, year, "latitude", "longitude"]]
 
     # ------------------ Step 4: Apply carrier mapping ------------------
     # Map using carrier_mapping
     df_map_car = ied_forecast.merge(
+        carrier_mapping,
+        on=DEMAND_COLS,
+        how="left",
+        validate="m:1",
+    )
+    ipe_forecast = ipe_forecast.merge(
         carrier_mapping,
         on=DEMAND_COLS,
         how="left",
@@ -294,10 +306,10 @@ if __name__ == "__main__":
 
     # --- now build the final table with only TARGET_CARRIERS (consistent output) ---
     # ensure missing target columns exist, then order them
-    for c in TARGET_CARRIERS:
+    for c in ENERGY_CARRIERS:
         if c not in wide.columns:
             wide[c] = 0.0
-    wide = wide.reindex(columns=TARGET_CARRIERS, fill_value=0.0)
+    wide = wide.reindex(columns=ENERGY_CARRIERS, fill_value=0.0)
 
     # Add current_electricity
     wide["current electricity"] = df_today.reindex(wide.index).fillna(0.0)[current_electricity_year]
@@ -376,15 +388,31 @@ if __name__ == "__main__":
         distance_col="dist_to_region",
     )
 
-    # Group by region and sum for the requested year
-    ipe_year = ipe_forecast.groupby(
-        "name", as_index=True
-    )[[year]].sum()
+    # Sum by region and carrier for the selected year
+    group_col = "name"
+    ipe_wide = (
+        ipe_forecast
+        .dropna(subset=['pypsa_carrier'])          # keep only mapped carriers
+        .groupby([group_col, 'pypsa_carrier'], as_index=False)[[year]]
+        .sum()
+        .pivot(index=group_col, columns='pypsa_carrier', values=year)
+        .fillna(0.0)
+    )
 
+    # Reindex to mapped regions and add to mapped DataFrame
+    ipe_wide = ipe_wide.reindex(mapped.index).fillna(0.0)
+    
+    logger.info("[Step 11] Add process emissions")
+    for carrier in PROCESS_EMISSION_CARRIERS:
+        if carrier in ipe_wide.columns:
+            mapped[carrier] = ipe_wide[carrier]
+        else:
+            mapped[carrier] = 0.0
+  
+   #------------------ Step 11: Merge with original nodal industry ------------------      
     logger.info("[Step 11] Add process emissions")
     # Add process emissions to mapped
-    mapped["process emission"] = ipe_year.reindex(mapped.index).fillna(0.0)[year]
-
+   
     # Merge with original nodal industry and only overwrite those from mapped
     industrial_energy_demand_per_node = pd.read_csv(snakemake.input.industrial_energy_demand_per_node)
     industrial_energy_demand_per_node.set_index(NODE_COL, inplace=True)
