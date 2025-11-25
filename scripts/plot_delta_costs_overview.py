@@ -222,7 +222,7 @@ if __name__ == "__main__":
         # Add 0 axis line
         ax.axhline(0, color="black", lw=0.5)      
     
-    # Set ylim by using the maximum absolute value across all axes
+    # Set ylim by using the maximum absolute value across all axes 
     ymax = 0
     for ax in axes:
         ax_ymax = ax.get_ylim()[1]
