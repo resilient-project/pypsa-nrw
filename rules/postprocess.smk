@@ -605,3 +605,46 @@ rule plot_base_statistics:
         + "figures/.statistics_plots_base_s_{clusters}_elec_{opts}",
     script:
         "../scripts/plot_statistics.py"
+
+
+rule plot_costs_overview:
+    params:
+        plotting_fig=config_provider("plotting", "figures", "plot_costs_overview"),
+    input:
+        costs=expand(
+            RESULTS + "csvs/costs.csv",
+            **config["scenario"],
+            run=config["run"]["name"],
+        ),
+    output:
+        plot="results/" + PREFIX+"/graphs/costs_overview.pdf",
+    log:
+        "results/" + PREFIX + "/logs/plot_costs_overview.log",
+    benchmark:
+        "results/" + PREFIX + "/benchmark/plot_costs_overview",
+    conda:
+        "../envs/environment.yaml"
+    script:
+        "../scripts/plot_costs_overview.py"
+
+
+rule plot_delta_costs_overview:
+    params:
+        plotting_fig=config_provider("plotting", "figures", "plot_delta_costs_overview"),
+    input:
+        costs=expand(
+            RESULTS + "csvs/costs.csv",
+            **config["scenario"],
+            run=config["run"]["name"],
+        ),
+    output:
+        plot="results/" + PREFIX+"/graphs/delta_costs_overview.pdf",
+    log:
+        "results/" + PREFIX + "/logs/plot_delta_costs_overview.log",
+    benchmark:
+        "results/" + PREFIX + "/benchmark/plot_delta_costs_overview",
+    conda:
+        "../envs/environment.yaml"
+    script:
+        "../scripts/plot_delta_costs_overview.py"
+

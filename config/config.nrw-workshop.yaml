@@ -8,11 +8,11 @@ remote:
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#run
 run:
-  prefix: nrw-workshop
+  prefix: nrw-workshop-full
   name:
-  - co2-pipelines-min-ccs
-  - delayed-co2-pipelines-min-ccs  
-  - co2-pipelines-max-ccs
+  # - co2-pipelines-min-ccs
+  # - delayed-co2-pipelines-min-ccs  
+  # - co2-pipelines-max-ccs
   - forecast-co2-pipelines-min-ccs
   - forecast-delayed-co2-pipelines-min-ccs
   - forecast-co2-pipelines-max-ccs
@@ -136,7 +136,7 @@ clustering:
     NL: 1
     DEA: 3
   temporal:
-    resolution_sector: 365H # CHANGE to 2190seg instead of 365H
+    resolution_sector: 2190seg # CHANGE to 2190seg instead of 365H
 
 wasserstoff_kernnetz:
   enable: true

@@ -41,6 +41,7 @@ resources = path_provider("resources/", RDIR, shared_resources, exclude_from_sha
 cutout_dir = config["atlite"]["cutout_directory"]
 CDIR = Path(cutout_dir).joinpath("" if run["shared_cutouts"] else RDIR)
 RESULTS = "results/" + RDIR
+PREFIX = config["run"]["prefix"]
 
 
 localrules:
