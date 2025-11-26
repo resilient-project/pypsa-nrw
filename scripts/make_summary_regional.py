@@ -301,7 +301,7 @@ if __name__ == "__main__":
         from scripts._helpers import mock_snakemake
 
         snakemake = mock_snakemake(
-            "make_regional_summary",
+            "make_summary_regional",
             clusters="adm",
             opts="",
             sector_opts="",
@@ -321,10 +321,52 @@ if __name__ == "__main__":
     assign_locations(n)
 
     # Only keep buses that start with DE
+    buses_to_drop = n.buses.index[~n.buses.index.str.contains(subregion)]
+    # Don't drop the EU buses if they exist
+    buses_to_drop = buses_to_drop[~buses_to_drop.str.startswith("EU")]
+
+    # Remove static components connected to dropped buses
+    logger.info(f"Dropping {len(buses_to_drop)} buses outside {subregion}.")
     n.remove(
         "Bus",
-        n.buses.index[~n.buses.index.str.contains(subregion)],
+        buses_to_drop,
     )
+
+    # Remove all components whose location are not in the remaining buses
+    generators_to_drop = n.generators.index[~n.generators.location.isin(n.buses.index)]
+    logger.info(f"Dropping {len(generators_to_drop)} generators outside {subregion}.")
+    n.remove("Generator", generators_to_drop)
+
+    loads_to_drop = n.loads.index[~n.loads.location.isin(n.buses.index)]
+    logger.info(f"Dropping {len(loads_to_drop)} loads outside {subregion}.")
+    n.remove("Load", loads_to_drop)
+
+    stores_to_drop = n.stores.index[~n.stores.location.isin(n.buses.index)]
+    logger.info(f"Dropping {len(stores_to_drop)} stores outside {subregion}.")
+    n.remove("Store", stores_to_drop)
+
+    storage_units_to_drop = n.storage_units.index[~n.storage_units.location.isin(n.buses.index)]
+    logger.info(f"Dropping {len(storage_units_to_drop)} storage units outside {subregion}.")
+    n.remove("StorageUnit", storage_units_to_drop)
+
+    lines_to_drop = n.lines.index[
+        (~n.lines.bus0.map(n.buses.location).isin(n.buses.index)) | (~n.lines.bus1.map(n.buses.location).isin(n.buses.index)) 
+    ]
+    logger.info(f"Dropping {len(lines_to_drop)} lines outside {subregion}.")
+    n.remove("Line", lines_to_drop)
+
+    links_to_drop = n.links.index[
+        (~n.links.bus0.map(n.buses.location).isin(n.buses.index)) | (~n.links.bus1.map(n.buses.location).isin(n.buses.index)) 
+    ]
+    logger.info(f"Dropping {len(links_to_drop)} links outside {subregion}.")
+    n.remove("Link", links_to_drop)
+
+    # Remove links that have "EU" in both bus0 and bus1
+    eu_links_to_drop = n.links.index[
+        (n.links.bus0.str.startswith("EU")) & (n.links.bus1.str.startswith("EU"))
+    ]
+    logger.info(f"Dropping {len(eu_links_to_drop)} links connecting only EU buses.")
+    n.remove("Link", eu_links_to_drop)
 
     pypsa.options.params.statistics.nice_names = False
     pypsa.options.params.statistics.drop_zero = False
