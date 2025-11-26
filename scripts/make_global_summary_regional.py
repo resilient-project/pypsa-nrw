@@ -36,13 +36,16 @@ if __name__ == "__main__":
         from scripts._helpers import mock_snakemake
 
         snakemake = mock_snakemake(
-            "make_global_summary",
+            "make_global_summary_regional",
             configfiles=["config/config.nrw-workshop.yaml"],
             run="forecast-co2-pipelines-max-ccs",
+            subregion="DEA",
             )
 
     configure_logging(snakemake)
     set_scenario_config(snakemake)
+
+    subregion = snakemake.wildcards.subregion
 
     for kind in snakemake.output.keys():
         logger.info(f"Creating global summary for {kind}")
@@ -50,7 +53,7 @@ if __name__ == "__main__":
         summaries_dict = {
             (cluster, opt + sector_opt, planning_horizon): "results/"
             + snakemake.params.RDIR
-            + f"csvs/individual/{kind}_s_{cluster}_{opt}_{sector_opt}_{planning_horizon}.csv"
+            + f"regional/csvs/{subregion}/individual/{kind}_s_{cluster}_{opt}_{sector_opt}_{planning_horizon}.csv"
             for cluster in snakemake.params.scenario["clusters"]
             for opt in snakemake.params.scenario["opts"]
             for sector_opt in snakemake.params.scenario["sector_opts"]

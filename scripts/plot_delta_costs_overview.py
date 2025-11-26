@@ -58,8 +58,9 @@ if __name__ == "__main__":
         from scripts._helpers import mock_snakemake
 
         snakemake = mock_snakemake(
-            "plot_delta_costs_overview",
+            "plot_delta_costs_overview_regional",
             configfiles=["config/config.nrw-workshop.yaml"],
+            subregion="DEA",
         )
 
     configure_logging(snakemake)
@@ -98,8 +99,13 @@ if __name__ == "__main__":
     # Create df of all runs (rows)
     costs = pd.DataFrame()
     costs["path"] = snakemake.input.costs
-    costs["prefix"] = costs["path"].apply(lambda x: x.split("/")[-4])
-    costs["name"] = costs["path"].apply(lambda x: x.split("/")[-3])
+
+    if "regional" in snakemake.rule:
+        costs["prefix"] = costs["path"].apply(lambda x: x.split("/")[-5])
+        costs["name"] = costs["path"].apply(lambda x: x.split("/")[-5])
+    else:
+        costs["prefix"] = costs["path"].apply(lambda x: x.split("/")[-4])
+        costs["name"] = costs["path"].apply(lambda x: x.split("/")[-3])
 
     costs = import_csvs(costs).fillna(0)
     costs["group"] = costs["carrier"].map(carrier_groups)

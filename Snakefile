@@ -83,11 +83,6 @@ if config["foresight"] == "perfect":
 rule all:
     input:
         expand(RESULTS + "graphs/costs.svg", run=config["run"]["name"]),
-        expand(
-            RESULTS + "regional/graphs/{subregion}/costs.svg", 
-            run=config_provider("run", "name"),
-            subregion=config_provider("regional_summary", "subregions"),
-        ),
         expand(resources("maps/power-network.pdf"), run=config["run"]["name"]),
         expand(
             resources("maps/power-network-s-{clusters}.pdf"),
@@ -127,15 +122,6 @@ rule all:
                 else []
             ),
             run=config["run"]["name"],
-        ),
-        lambda w: expand(
-            (
-                RESULTS + "regional/csvs/{subregion}/cumulative_costs.csv"
-                if config_provider("foresight")(w) == "myopic"
-                else []
-            ),
-            run=config["run"]["name"],
-            subregion=config_provider("regional_summary", "subregions"),
         ),
         lambda w: expand(
             (
@@ -933,11 +919,6 @@ rule ariadne_all:
     input:
         expand(RESULTS + "graphs/costs.svg", run=config_provider("run", "name")),
         expand(
-            RESULTS + "regional/graphs/{subregion}/costs.svg", 
-            run=config_provider("run", "name"),
-            subregion=config_provider("regional_summary", "subregions"),
-        ),
-        expand(
             RESULTS + "ariadne/capacity_detailed.png",
             run=config_provider("run", "name"),
         ),
@@ -954,6 +935,40 @@ rule ariadne_all:
         ),
     script:
         "scripts/pypsa-de/plot_ariadne_scenario_comparison.py"
+
+
+rule extras:
+    input:
+        "results/" + PREFIX+"/graphs/costs_overview.pdf",
+        "results/" + PREFIX+"/graphs/delta_costs_overview.pdf",
+        expand(
+            "results/" + PREFIX+"/graphs/costs_overview_{subregion}.pdf",
+            subregion=config_provider("regional_summary", "subregions"),
+        ),
+        expand(
+            "results/" + PREFIX+"/graphs/delta_costs_overview_{subregion}.pdf",
+            subregion=config_provider("regional_summary", "subregions"),
+        ),
+        expand(
+            RESULTS + "regional/graphs/{subregion}/costs.svg", 
+            run=config_provider("run", "name"),
+            subregion=config_provider("regional_summary", "subregions"),
+        ),
+        expand(
+            RESULTS + "regional/graphs/{subregion}/costs.svg", 
+            run=config_provider("run", "name"),
+            subregion=config_provider("regional_summary", "subregions"),
+        ),
+        lambda w: expand(
+            (
+                RESULTS + "regional/csvs/{subregion}/cumulative_costs.csv"
+                if config_provider("foresight")(w) == "myopic"
+                else []
+            ),
+            run=config["run"]["name"],
+            subregion=config_provider("regional_summary", "subregions"),
+        ),
+
 
 
 rule build_scenarios:

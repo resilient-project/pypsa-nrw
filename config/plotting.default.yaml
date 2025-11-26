@@ -330,6 +330,7 @@ plotting:
       - SMR
       - Sabatier
       - Point source CC
+      - CO$_2$ seq
       - DAC
       - Load shedding
     plot_delta_costs_overview:
@@ -380,6 +381,7 @@ plotting:
       - SMR
       - Sabatier
       - Point source CC
+      - CO$_2$ seq
       - DAC
       - Load shedding
 
@@ -767,9 +769,9 @@ grouping:
   biogas to gas: Biomass & -gas
   biomass to liquid: Biomass & -gas
   biomass to liquid CC: Point source CC
-  co2: CO$_2$ infra
-  co2 sequestered: CO$_2$ infra
-  co2 stored: CO$_2$ infra
+  co2: CO$_2$ seq
+  co2 sequestered: CO$_2$ seq
+  co2 stored: CO$_2$ seq
   coal: Coal
   coal for industry: Coal
   electricity: Electricity grid
@@ -878,6 +880,7 @@ group_colors:
   Biomass & -gas: "#baa741"
   CHP: "#8a5751"
   CO$_2$ infra: "#cc99ff"
+  CO$_2$ seq: "#4f1745"
   Point source CC: "#f29dae"
   Coal: "#555555"
   DAC: "#ff5270"

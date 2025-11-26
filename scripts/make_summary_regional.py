@@ -306,7 +306,7 @@ if __name__ == "__main__":
             opts="",
             sector_opts="",
             planning_horizons="2035",
-            run="forecast-co2-pipelines-min-ccs",
+            run="forecast-co2-pipelines-max-ccs",
             configfiles="config/config.nrw-workshop.yaml",
             subregion = "DEA",
         )
@@ -317,56 +317,91 @@ if __name__ == "__main__":
     subregion = snakemake.wildcards.subregion
 
     n = pypsa.Network(snakemake.input.network)
+
     assign_carriers(n)
     assign_locations(n)
 
     # Only keep buses that start with DE
-    buses_to_drop = n.buses.index[~n.buses.index.str.contains(subregion)]
-    # Don't drop the EU buses if they exist
-    buses_to_drop = buses_to_drop[~buses_to_drop.str.startswith("EU")]
+    subregion_buses = n.buses.index[n.buses.location.str.startswith(subregion)]
+    subregion_outside = n.buses.index[~n.buses.location.str.startswith(subregion)]
+
+    # Identify neighbouring buses (via links and lines) that connect to the dropped buses
+    neighbouring_buses = set()
+    
+    # For links/multi-links 
+    vals = (
+        n.links.loc[
+            n.links.bus0.isin(subregion_buses)
+            | n.links.bus1.isin(subregion_buses)
+            | n.links.bus2.isin(subregion_buses)
+            | n.links.bus3.isin(subregion_buses),
+            ["bus0", "bus1", "bus2", "bus3"]
+        ]
+        .stack()      # drops NaNs implicitly
+        .values
+    )
+    vals = set(vals)
+    # Remove None and ""
+    vals.discard(None)
+    vals.discard("")
+    # Keep only those that are outside the subregion
+    vals = vals.intersection(subregion_outside)
+    neighbouring_buses |= vals
+
+    neighbouring_buses |= set(
+        n.lines.loc[
+            n.lines.bus0.isin(subregion_buses) & n.lines.bus1.isin(subregion_outside),
+            "bus1"
+        ]
+    )
+    neighbouring_buses |= set(
+        n.lines.loc[
+            n.lines.bus1.isin(subregion_buses) & n.lines.bus0.isin(subregion_outside),
+            "bus0"
+        ]
+    )
+    logger.info(f"Keeping {len(neighbouring_buses)} neighbouring buses connected to {subregion}.")
+
+    buses_to_keep = subregion_buses.union(neighbouring_buses)
+    # Update buses_to_drop
+    buses_to_drop = n.buses.index.difference(buses_to_keep)
 
     # Remove static components connected to dropped buses
-    logger.info(f"Dropping {len(buses_to_drop)} buses outside {subregion}.")
+    logger.info(f"Dropping {len(buses_to_drop)} buses outside {subregion}, keeping direct neighbours.")
     n.remove(
         "Bus",
         buses_to_drop,
     )
 
     # Remove all components whose location are not in the remaining buses
-    generators_to_drop = n.generators.index[~n.generators.location.isin(n.buses.index)]
+    generators_to_drop = n.generators.index[~n.generators.bus.isin(subregion_buses)]
     logger.info(f"Dropping {len(generators_to_drop)} generators outside {subregion}.")
     n.remove("Generator", generators_to_drop)
 
-    loads_to_drop = n.loads.index[~n.loads.location.isin(n.buses.index)]
+    loads_to_drop = n.loads.index[~n.loads.bus.isin(subregion_buses)]
     logger.info(f"Dropping {len(loads_to_drop)} loads outside {subregion}.")
     n.remove("Load", loads_to_drop)
 
-    stores_to_drop = n.stores.index[~n.stores.location.isin(n.buses.index)]
+    stores_to_drop = n.stores.index[~n.stores.bus.isin(subregion_buses)]
     logger.info(f"Dropping {len(stores_to_drop)} stores outside {subregion}.")
     n.remove("Store", stores_to_drop)
 
-    storage_units_to_drop = n.storage_units.index[~n.storage_units.location.isin(n.buses.index)]
+    storage_units_to_drop = n.storage_units.index[~n.storage_units.bus.isin(subregion_buses)]
     logger.info(f"Dropping {len(storage_units_to_drop)} storage units outside {subregion}.")
     n.remove("StorageUnit", storage_units_to_drop)
 
     lines_to_drop = n.lines.index[
-        (~n.lines.bus0.map(n.buses.location).isin(n.buses.index)) | (~n.lines.bus1.map(n.buses.location).isin(n.buses.index)) 
+        (~n.lines.bus0.isin(subregion_buses)) & (~n.lines.bus1.isin(subregion_buses)) 
     ]
-    logger.info(f"Dropping {len(lines_to_drop)} lines outside {subregion}.")
+    logger.info(f"Dropping {len(lines_to_drop)} lines outside {subregion} and beyond direct lines connecting neighbours.")
     n.remove("Line", lines_to_drop)
 
     links_to_drop = n.links.index[
-        (~n.links.bus0.map(n.buses.location).isin(n.buses.index)) | (~n.links.bus1.map(n.buses.location).isin(n.buses.index)) 
+        (~n.links.bus0.isin(subregion_buses)) & (~n.links.bus1.isin(subregion_buses)) & (~n.links.bus2.isin(subregion_buses)) & (~n.links.bus3.isin(subregion_buses)) 
     ]
-    logger.info(f"Dropping {len(links_to_drop)} links outside {subregion}.")
+    
+    logger.info(f"Dropping {len(links_to_drop)} links outside {subregion} and beyond direct links connecting neighbours.")
     n.remove("Link", links_to_drop)
-
-    # Remove links that have "EU" in both bus0 and bus1
-    eu_links_to_drop = n.links.index[
-        (n.links.bus0.str.startswith("EU")) & (n.links.bus1.str.startswith("EU"))
-    ]
-    logger.info(f"Dropping {len(eu_links_to_drop)} links connecting only EU buses.")
-    n.remove("Link", eu_links_to_drop)
 
     pypsa.options.params.statistics.nice_names = False
     pypsa.options.params.statistics.drop_zero = False

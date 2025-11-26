@@ -536,7 +536,7 @@ rule make_global_summary_regional:
     conda:
         "../envs/environment.yaml"
     script:
-        "../scripts/make_global_summary.py"
+        "../scripts/make_global_summary_regional.py"
 
 
 rule make_cumulative_costs:
@@ -846,6 +846,28 @@ rule plot_costs_overview:
         "../scripts/plot_costs_overview.py"
 
 
+rule plot_costs_overview_regional:
+    params:
+        plotting_fig=config_provider("plotting", "figures", "plot_costs_overview"),
+    input:
+        costs=lambda w: expand(
+            RESULTS + "regional/csvs/{subregion}/costs.csv",
+            **config["scenario"],
+            run=config["run"]["name"],
+            subregion=w.subregion
+        )
+    output:
+        plot="results/" + PREFIX+"/graphs/costs_overview_{subregion}.pdf",
+    log:
+        "results/" + PREFIX + "/logs/plot_costs_overview_{subregion}.log",
+    benchmark:
+        "results/" + PREFIX + "/benchmark/plot_costs_overview_{subregion}",
+    conda:
+        "../envs/environment.yaml"
+    script:
+        "../scripts/plot_costs_overview.py"
+
+
 rule plot_delta_costs_overview:
     params:
         plotting_fig=config_provider("plotting", "figures", "plot_delta_costs_overview"),
@@ -861,6 +883,28 @@ rule plot_delta_costs_overview:
         "results/" + PREFIX + "/logs/plot_delta_costs_overview.log",
     benchmark:
         "results/" + PREFIX + "/benchmark/plot_delta_costs_overview",
+    conda:
+        "../envs/environment.yaml"
+    script:
+        "../scripts/plot_delta_costs_overview.py"
+
+
+rule plot_delta_costs_overview_regional:
+    params:
+        plotting_fig=config_provider("plotting", "figures", "plot_delta_costs_overview"),
+    input:
+        costs=lambda w: expand(
+            RESULTS + "regional/csvs/{subregion}/costs.csv",
+            **config["scenario"],
+            run=config["run"]["name"],
+            subregion=w.subregion
+        )
+    output:
+        plot="results/" + PREFIX+"/graphs/delta_costs_overview_{subregion}.pdf",
+    log:
+        "results/" + PREFIX + "/logs/plot_delta_costs_overview_{subregion}.log",
+    benchmark:
+        "results/" + PREFIX + "/benchmark/plot_delta_costs_overview_{subregion}",
     conda:
         "../envs/environment.yaml"
     script:
