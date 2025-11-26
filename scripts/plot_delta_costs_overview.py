@@ -219,7 +219,7 @@ if __name__ == "__main__":
                 ax.text(
                     x=j,
                     y=total,
-                    s=f"{total:.0f}",
+                    s=f"{total:.1f}",
                     ha="center",
                     va="bottom",
                     fontsize=subfontsize,
