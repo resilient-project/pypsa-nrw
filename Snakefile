@@ -83,6 +83,11 @@ if config["foresight"] == "perfect":
 rule all:
     input:
         expand(RESULTS + "graphs/costs.svg", run=config["run"]["name"]),
+        expand(
+            RESULTS + "regional/{subregion}/graphs/costs.svg", 
+            run=config_provider("run", "name"),
+            subregion=config_provider("regional_summary", "subregions"),
+        ),
         expand(resources("maps/power-network.pdf"), run=config["run"]["name"]),
         expand(
             resources("maps/power-network-s-{clusters}.pdf"),
@@ -125,6 +130,15 @@ rule all:
         ),
         lambda w: expand(
             (
+                RESULTS + "regional/{subregion}/csvs/cumulative_costs.csv"
+                if config_provider("foresight")(w) == "myopic"
+                else []
+            ),
+            run=config["run"]["name"],
+            subregion=config_provider("regional_summary", "subregions"),
+        ),
+        lambda w: expand(
+            (
                 RESULTS
                 + "maps/base_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}-balance_map_{carrier}.pdf"
             ),
@@ -154,15 +168,6 @@ rule all:
             + "graphics/heatmap_timeseries/s_{clusters}_{opts}_{sector_opts}_{planning_horizons}",
             run=config["run"]["name"],
             **config["scenario"],
-        ),
-        lambda w: expand(
-            (
-                RESULTS + "regional/{subregion}/csvs/cumulative_costs.csv"
-                if config_provider("foresight")(w) == "myopic"
-                else []
-            ),
-            run=config["run"]["name"],
-            subregion=config_provider("regional_summary", "subregions"),
         ),
     default_target: True
 
@@ -928,6 +933,11 @@ rule ariadne_all:
     input:
         expand(RESULTS + "graphs/costs.svg", run=config_provider("run", "name")),
         expand(
+            RESULTS + "regional/{subregion}/graphs/costs.svg", 
+            run=config_provider("run", "name"),
+            subregion=config_provider("regional_summary", "subregions"),
+        ),
+        expand(
             RESULTS + "ariadne/capacity_detailed.png",
             run=config_provider("run", "name"),
         ),
@@ -941,11 +951,6 @@ rule ariadne_all:
         exported_variables=expand(
             RESULTS + "ariadne/exported_variables_full.xlsx",
             run=config_provider("run", "name"),
-        ),
-        expand(
-            RESULTS + "regional/{subregion}/graphs/costs.svg", 
-            run=config_provider("run", "name"),
-            subregion=config_provider("regional_summary", "subregions"),
         ),
     script:
         "scripts/pypsa-de/plot_ariadne_scenario_comparison.py"
