@@ -84,7 +84,7 @@ rule all:
     input:
         expand(RESULTS + "graphs/costs.svg", run=config["run"]["name"]),
         expand(
-            RESULTS + "regional/{subregion}/graphs/costs.svg", 
+            RESULTS + "regional/graphs/{subregion}/costs.svg", 
             run=config_provider("run", "name"),
             subregion=config_provider("regional_summary", "subregions"),
         ),
@@ -130,7 +130,7 @@ rule all:
         ),
         lambda w: expand(
             (
-                RESULTS + "regional/{subregion}/csvs/cumulative_costs.csv"
+                RESULTS + "regional/csvs/{subregion}/cumulative_costs.csv"
                 if config_provider("foresight")(w) == "myopic"
                 else []
             ),
@@ -933,7 +933,7 @@ rule ariadne_all:
     input:
         expand(RESULTS + "graphs/costs.svg", run=config_provider("run", "name")),
         expand(
-            RESULTS + "regional/{subregion}/graphs/costs.svg", 
+            RESULTS + "regional/graphs/{subregion}/costs.svg", 
             run=config_provider("run", "name"),
             subregion=config_provider("regional_summary", "subregions"),
         ),
