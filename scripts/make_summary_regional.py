@@ -301,21 +301,30 @@ if __name__ == "__main__":
         from scripts._helpers import mock_snakemake
 
         snakemake = mock_snakemake(
-            "make_summary",
+            "make_regional_summary",
             clusters="adm",
             opts="",
             sector_opts="",
             planning_horizons="2035",
             run="forecast-co2-pipelines-min-ccs",
             configfiles="config/config.nrw-workshop.yaml",
+            subregion = "DEA",
         )
 
     configure_logging(snakemake)
     set_scenario_config(snakemake)
 
+    subregion = snakemake.wildcards.subregion
+
     n = pypsa.Network(snakemake.input.network)
     assign_carriers(n)
     assign_locations(n)
+
+    # Only keep buses that start with DE
+    n.remove(
+        "Bus",
+        n.buses.index[~n.buses.index.str.contains(subregion)],
+    )
 
     pypsa.options.params.statistics.nice_names = False
     pypsa.options.params.statistics.drop_zero = False

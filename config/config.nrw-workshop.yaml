@@ -127,6 +127,11 @@ lines:
   dynamic_line_rating:
     cutout: europe-2019-sarah3-era5
 
+regional_summary:
+  subregions:
+  - DE
+  - DEA
+
 clustering:
   mode: administrative
   administrative:

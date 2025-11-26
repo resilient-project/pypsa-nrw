@@ -255,6 +255,56 @@ rule make_summary:
         "../scripts/make_summary.py"
 
 
+rule make_summary_regional:
+    input:
+        network=RESULTS
+        + "networks/base_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.nc",
+    output:
+        nodal_costs=RESULTS
+        + "regional/{subregion}/csvs/individual/nodal_costs_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+        nodal_capacities=RESULTS
+        + "regional/{subregion}/csvs/individual/nodal_capacities_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+        nodal_capacity_factors=RESULTS
+        + "regional/{subregion}/csvs/individual/nodal_capacity_factors_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+        capacity_factors=RESULTS
+        + "regional/{subregion}/csvs/individual/capacity_factors_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+        costs=RESULTS
+        + "regional/{subregion}/csvs/individual/costs_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+        capacities=RESULTS
+        + "regional/{subregion}/csvs/individual/capacities_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+        curtailment=RESULTS
+        + "regional/{subregion}/csvs/individual/curtailment_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+        energy=RESULTS
+        + "regional/{subregion}/csvs/individual/energy_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+        energy_balance=RESULTS
+        + "regional/{subregion}/csvs/individual/energy_balance_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+        nodal_energy_balance=RESULTS
+        + "regional/{subregion}/csvs/individual/nodal_energy_balance_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+        prices=RESULTS
+        + "regional/{subregion}/csvs/individual/prices_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+        weighted_prices=RESULTS
+        + "regional/{subregion}/csvs/individual/weighted_prices_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+        market_values=RESULTS
+        + "regional/{subregion}/csvs/individual/market_values_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+        metrics=RESULTS
+        + "regional/{subregion}/csvs/individual/metrics_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+    threads: 1
+    resources:
+        mem_mb=8000,
+    log:
+        RESULTS
+        + "logs/make_summary_regional_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}_{subregion}.log",
+    benchmark:
+        (
+            RESULTS
+            + "benchmarks/make_summary_regional_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}_{subregion}"
+        )
+    conda:
+        "../envs/environment.yaml"
+    script:
+        "../scripts/make_summary_regional.py"
+
+
 rule make_global_summary:
     params:
         scenario=config_provider("scenario"),
@@ -372,6 +422,123 @@ rule make_global_summary:
         "../scripts/make_global_summary.py"
 
 
+rule make_global_summary_regional:
+    params:
+        scenario=config_provider("scenario"),
+        RDIR=RDIR,
+    input:
+        nodal_costs=expand(
+            RESULTS
+            + "regional/{subregion}/csvs/individual/nodal_costs_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+            **config["scenario"],
+            allow_missing=True,
+        ),
+        nodal_capacities=expand(
+            RESULTS
+            + "regional/{subregion}/csvs/individual/nodal_capacities_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+            **config["scenario"],
+            allow_missing=True,
+        ),
+        nodal_capacity_factors=expand(
+            RESULTS
+            + "regional/{subregion}/csvs/individual/nodal_capacity_factors_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+            **config["scenario"],
+            allow_missing=True,
+        ),
+        capacity_factors=expand(
+            RESULTS
+            + "regional/{subregion}/csvs/individual/capacity_factors_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+            **config["scenario"],
+            allow_missing=True,
+        ),
+        costs=expand(
+            RESULTS
+            + "regional/{subregion}/csvs/individual/costs_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+            **config["scenario"],
+            allow_missing=True,
+        ),
+        capacities=expand(
+            RESULTS
+            + "regional/{subregion}/csvs/individual/capacities_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+            **config["scenario"],
+            allow_missing=True,
+        ),
+        curtailment=expand(
+            RESULTS
+            + "regional/{subregion}/csvs/individual/curtailment_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+            **config["scenario"],
+            allow_missing=True,
+        ),
+        energy=expand(
+            RESULTS
+            + "regional/{subregion}/csvs/individual/energy_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+            **config["scenario"],
+            allow_missing=True,
+        ),
+        energy_balance=expand(
+            RESULTS
+            + "regional/{subregion}/csvs/individual/energy_balance_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+            **config["scenario"],
+            allow_missing=True,
+        ),
+        nodal_energy_balance=expand(
+            RESULTS
+            + "regional/{subregion}/csvs/individual/nodal_energy_balance_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+            **config["scenario"],
+            allow_missing=True,
+        ),
+        prices=expand(
+            RESULTS
+            + "regional/{subregion}/csvs/individual/prices_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+            **config["scenario"],
+            allow_missing=True,
+        ),
+        weighted_prices=expand(
+            RESULTS
+            + "regional/{subregion}/csvs/individual/weighted_prices_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+            **config["scenario"],
+            allow_missing=True,
+        ),
+        market_values=expand(
+            RESULTS
+            + "regional/{subregion}/csvs/individual/market_values_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+            **config["scenario"],
+            allow_missing=True,
+        ),
+        metrics=expand(
+            RESULTS
+            + "regional/{subregion}/csvs/individual/metrics_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+            **config["scenario"],
+            allow_missing=True,
+        ),
+    output:
+        costs=RESULTS + "regional/{subregion}/csvs/costs.csv",
+        capacities=RESULTS + "regional/{subregion}/csvs/capacities.csv",
+        energy=RESULTS + "regional/{subregion}/csvs/energy.csv",
+        energy_balance=RESULTS + "regional/{subregion}/csvs/energy_balance.csv",
+        capacity_factors=RESULTS + "regional/{subregion}/csvs/capacity_factors.csv",
+        metrics=RESULTS + "regional/{subregion}/csvs/metrics.csv",
+        curtailment=RESULTS + "regional/{subregion}/csvs/curtailment.csv",
+        prices=RESULTS + "regional/{subregion}/csvs/prices.csv",
+        weighted_prices=RESULTS + "regional/{subregion}/csvs/weighted_prices.csv",
+        market_values=RESULTS + "regional/{subregion}/csvs/market_values.csv",
+        nodal_costs=RESULTS + "regional/{subregion}/csvs/nodal_costs.csv",
+        nodal_capacities=RESULTS + "regional/{subregion}/csvs/nodal_capacities.csv",
+        nodal_energy_balance=RESULTS + "regional/{subregion}/csvs/nodal_energy_balance.csv",
+        nodal_capacity_factors=RESULTS + "regional/{subregion}/csvs/nodal_capacity_factors.csv",
+    threads: 1
+    resources:
+        mem_mb=8000,
+    log:
+        RESULTS + "logs/make_global_summary_regional_{subregion}.log",
+    benchmark:
+        RESULTS + "benchmarks/make_global_summary_regional_{subregion}"
+    conda:
+        "../envs/environment.yaml"
+    script:
+        "../scripts/make_global_summary.py"
+
+
 rule make_cumulative_costs:
     params:
         scenario=config_provider("scenario"),
@@ -386,6 +553,26 @@ rule make_cumulative_costs:
         RESULTS + "logs/make_cumulative_costs.log",
     benchmark:
         RESULTS + "benchmarks/make_cumulative_costs"
+    conda:
+        "../envs/environment.yaml"
+    script:
+        "../scripts/make_cumulative_costs.py"
+
+
+rule make_cumulative_costs_regional:
+    params:
+        scenario=config_provider("scenario"),
+    input:
+        costs=RESULTS + "regional/{subregion}/csvs/costs.csv",
+    output:
+        cumulative_costs=RESULTS + "regional/{subregion}/csvs/cumulative_costs.csv",
+    threads: 1
+    resources:
+        mem_mb=4000,
+    log:
+        RESULTS + "logs/make_cumulative_costs_regional_{subregion}.log",
+    benchmark:
+        RESULTS + "benchmarks/make_cumulative_costs_regional_{subregion}"
     conda:
         "../envs/environment.yaml"
     script:
@@ -417,6 +604,37 @@ rule plot_summary:
         mem_mb=10000,
     log:
         RESULTS + "logs/plot_summary.log",
+    conda:
+        "../envs/environment.yaml"
+    script:
+        "../scripts/plot_summary.py"
+
+
+rule plot_summary_regional:
+    params:
+        countries=config_provider("countries"),
+        planning_horizons=config_provider("scenario", "planning_horizons"),
+        emissions_scope=config_provider("energy", "emissions"),
+        plotting=config_provider("plotting"),
+        foresight=config_provider("foresight"),
+        co2_budget=config_provider("co2_budget"),
+        sector=config_provider("sector"),
+        RDIR=RDIR,
+    input:
+        costs=RESULTS + "regional/{subregion}/csvs/costs.csv",
+        energy=RESULTS + "regional/{subregion}/csvs/energy.csv",
+        balances=RESULTS + "regional/{subregion}/csvs/energy_balance.csv",
+        eurostat="data/eurostat/Balances-April2023",
+        co2="data/bundle/eea/UNFCCC_v23.csv",
+    output:
+        costs=RESULTS + "regional/{subregion}/graphs/costs.svg",
+        energy=RESULTS + "regional/{subregion}/graphs/energy.svg",
+        balances=RESULTS + "regional/{subregion}/graphs/balances-energy.svg",
+    threads: 2
+    resources:
+        mem_mb=10000,
+    log:
+        RESULTS + "logs/plot_summary_regional_{subregion}.log",
     conda:
         "../envs/environment.yaml"
     script:
