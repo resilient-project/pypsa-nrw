@@ -308,7 +308,7 @@ if __name__ == "__main__":
             planning_horizons="2035",
             run="forecast-co2-pipelines-max-ccs",
             configfiles="config/config.nrw-workshop.yaml",
-            subregion = "DEA",
+            subregion = "DE",
         )
 
     configure_logging(snakemake)

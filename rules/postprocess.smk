@@ -430,84 +430,98 @@ rule make_global_summary_regional:
         nodal_costs=expand(
             RESULTS
             + "regional/csvs/{subregion}/individual/nodal_costs_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+            subregion=config_provider("regional_summary", "subregions"),
             **config["scenario"],
             allow_missing=True,
         ),
         nodal_capacities=expand(
             RESULTS
             + "regional/csvs/{subregion}/individual/nodal_capacities_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+            subregion=config_provider("regional_summary", "subregions"),
             **config["scenario"],
             allow_missing=True,
         ),
         nodal_capacity_factors=expand(
             RESULTS
             + "regional/csvs/{subregion}/individual/nodal_capacity_factors_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+            subregion=config_provider("regional_summary", "subregions"),
             **config["scenario"],
             allow_missing=True,
         ),
         capacity_factors=expand(
             RESULTS
             + "regional/csvs/{subregion}/individual/capacity_factors_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+            subregion=config_provider("regional_summary", "subregions"),
             **config["scenario"],
             allow_missing=True,
         ),
         costs=expand(
             RESULTS
             + "regional/csvs/{subregion}/individual/costs_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+            subregion=config_provider("regional_summary", "subregions"),
             **config["scenario"],
             allow_missing=True,
         ),
         capacities=expand(
             RESULTS
             + "regional/csvs/{subregion}/individual/capacities_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+            subregion=config_provider("regional_summary", "subregions"),
             **config["scenario"],
             allow_missing=True,
         ),
         curtailment=expand(
             RESULTS
             + "regional/csvs/{subregion}/individual/curtailment_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+            subregion=config_provider("regional_summary", "subregions"),
             **config["scenario"],
             allow_missing=True,
         ),
         energy=expand(
             RESULTS
             + "regional/csvs/{subregion}/individual/energy_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+            subregion=config_provider("regional_summary", "subregions"),
             **config["scenario"],
             allow_missing=True,
         ),
         energy_balance=expand(
             RESULTS
             + "regional/csvs/{subregion}/individual/energy_balance_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+            subregion=config_provider("regional_summary", "subregions"),
             **config["scenario"],
             allow_missing=True,
         ),
         nodal_energy_balance=expand(
             RESULTS
             + "regional/csvs/{subregion}/individual/nodal_energy_balance_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+            subregion=config_provider("regional_summary", "subregions"),
             **config["scenario"],
             allow_missing=True,
         ),
         prices=expand(
             RESULTS
             + "regional/csvs/{subregion}/individual/prices_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+            subregion=config_provider("regional_summary", "subregions"),
             **config["scenario"],
             allow_missing=True,
         ),
         weighted_prices=expand(
             RESULTS
             + "regional/csvs/{subregion}/individual/weighted_prices_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+            subregion=config_provider("regional_summary", "subregions"),
             **config["scenario"],
             allow_missing=True,
         ),
         market_values=expand(
             RESULTS
             + "regional/csvs/{subregion}/individual/market_values_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+            subregion=config_provider("regional_summary", "subregions"),
             **config["scenario"],
             allow_missing=True,
         ),
         metrics=expand(
             RESULTS
             + "regional/csvs/{subregion}/individual/metrics_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+            subregion=config_provider("regional_summary", "subregions"),
             **config["scenario"],
             allow_missing=True,
         ),
