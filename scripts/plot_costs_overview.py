@@ -58,7 +58,7 @@ if __name__ == "__main__":
         from scripts._helpers import mock_snakemake
 
         snakemake = mock_snakemake(
-            "plot_costs_overview_regional",
+            "plot_costs_overview",
             configfiles=["config/config.nrw-workshop.yaml"],
             subregion="DEA",
         )
@@ -170,6 +170,8 @@ if __name__ == "__main__":
 
         data_order = [col for col in legend_order if col in data.columns]
         data = data[data_order]
+        # Change order of rows to lt_order
+        data = data.reindex(lt_order)
 
         # Rename to nice names
         data = data.rename(

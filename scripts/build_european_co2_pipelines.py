@@ -490,7 +490,7 @@ if __name__ == "__main__":
             "build_european_co2_pipelines",
             clusters="adm",
             opts="",
-            run="KN2045_Mix_co2-pipelines",
+            run="forecast-co2-pipelines-max-ccs",
             configfiles=["config/config.nrw-workshop.yaml"],        
         )
 

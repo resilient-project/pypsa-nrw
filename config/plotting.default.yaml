@@ -283,18 +283,50 @@ plotting:
       map_style: road
       tooltip: true
   figures:
+    plot_balances_overview:
+      nice_names:
+        # co2-pipelines-min-ccs: "Base"
+        # delayed-co2-pipelines-min-ccs: "Delay"
+        # co2-pipelines-max-ccs: "Max CCS"
+        forecast-co2-pipelines-min-ccs: "Base"
+        forecast-delayed-co2-pipelines-min-ccs: "Delay"
+        forecast-co2-pipelines-max-ccs: "ECCSA"
+      font:
+        family: sans-serif
+        sans-serif: Roboto
+        size: 6
+      figsize: (3.5, 2.3)
+      dpi: 300
+      carriers:
+      - co2 stored
+      - H2
+      carrier_nice_names:
+        co2 stored: "CO$_2$"
+        H2: "H$_2$"
+        gas: "CH$_4$"
+        oil: "Oil"
+      carrier_units:
+        co2 stored: "Mt"
+        H2: "TWh"
+        gas: "TWh"
+      delta_ymin:
+        co2 stored: -500
+        H2: -390
+        gas: -700
+      delta_ymax: 
+        co2 stored: 500
+        H2: 390
+        gas: 700
+      run_order:
+      - forecast-co2-pipelines-min-ccs
+      - forecast-delayed-co2-pipelines-min-ccs
+      - forecast-co2-pipelines-max-ccs
     plot_costs_overview:
       nice_names:
-        co2-pipelines-min-ccs: "Base"
-        delayed-co2-pipelines-min-ccs: "Delay"
-        co2-pipelines-max-ccs: "Max CCS"
-        forecast-co2-pipelines-min-ccs: "Base (FC)"
-        forecast-delayed-co2-pipelines-min-ccs: "Delay (FC)"
-        forecast-co2-pipelines-max-ccs: "Max CCS (FC)"
+        forecast-co2-pipelines-min-ccs: "Base"
+        forecast-delayed-co2-pipelines-min-ccs: "Delay"
+        forecast-co2-pipelines-max-ccs: "ECCSA"
       run_order:
-      - co2-pipelines-min-ccs
-      - delayed-co2-pipelines-min-ccs
-      - co2-pipelines-max-ccs
       - forecast-co2-pipelines-min-ccs
       - forecast-delayed-co2-pipelines-min-ccs
       - forecast-co2-pipelines-max-ccs
@@ -335,17 +367,11 @@ plotting:
       - Load shedding
     plot_delta_costs_overview:
       nice_names:
-        co2-pipelines-min-ccs: "Base"
-        delayed-co2-pipelines-min-ccs: "Delay"
-        co2-pipelines-max-ccs: "Max CCS"
-        forecast-co2-pipelines-min-ccs: "Base (FC)"
-        forecast-delayed-co2-pipelines-min-ccs: "Delay (FC)"
-        forecast-co2-pipelines-max-ccs: "Max CCS (FC)"
+        forecast-co2-pipelines-min-ccs: "Base"
+        forecast-delayed-co2-pipelines-min-ccs: "Delay"
+        forecast-co2-pipelines-max-ccs: "ECCSA"
       main_scenario: forecast-co2-pipelines-min-ccs
       run_order:
-      # - co2-pipelines-min-ccs
-      # - delayed-co2-pipelines-min-ccs
-      # - co2-pipelines-max-ccs
       - forecast-co2-pipelines-min-ccs
       - forecast-delayed-co2-pipelines-min-ccs
       - forecast-co2-pipelines-max-ccs

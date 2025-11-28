@@ -58,9 +58,9 @@ if __name__ == "__main__":
         from scripts._helpers import mock_snakemake
 
         snakemake = mock_snakemake(
-            "plot_delta_costs_overview_regional",
+            "plot_delta_costs_overview",
             configfiles=["config/config.nrw-workshop.yaml"],
-            subregion="DEA",
+            subregion="DE",
         )
 
     configure_logging(snakemake)
@@ -179,6 +179,9 @@ if __name__ == "__main__":
         data_order = [col for col in legend_order if col in data.columns]
         data = data[data_order]
 
+        # Change order of rows to lt_order
+        data = data.reindex(lt_order)
+
         # Rename to nice names
         data = data.rename(
             index={name: lt_order_nice_names[name] for name in lt_order if name in data.index}
@@ -213,17 +216,28 @@ if __name__ == "__main__":
             ax.yaxis.set_visible(False)
 
         # Add totals of positive values on top
-        totals = data[data>0].sum(axis=1)
+        # Calculate top (positive) and bottom (negative) stacks
+        pos_sum = data.clip(lower=0).sum(axis=1)
+        neg_sum = data.clip(upper=0).sum(axis=1)
+
+        totals = data.sum(axis=1)
+
         for j, total in enumerate(totals):
-            if total > 0:
-                ax.text(
-                    x=j,
-                    y=total,
-                    s=f"{total:.1f}",
-                    ha="center",
-                    va="bottom",
-                    fontsize=subfontsize,
-                )
+            if total >= 0:
+                y = pos_sum.iloc[j]
+                va = "bottom"
+            else:
+                y = neg_sum.iloc[j]
+                va = "top"
+
+            ax.text(
+                x=j,
+                y=y,
+                s=f"{total:.1f}",
+                ha="center",
+                va=va,
+                fontsize=subfontsize,
+            )
 
         # Add 0 axis line
         ax.axhline(0, color="black", lw=0.5)      

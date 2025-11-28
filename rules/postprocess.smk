@@ -924,3 +924,64 @@ rule plot_delta_costs_overview_regional:
     script:
         "../scripts/plot_delta_costs_overview.py"
 
+
+def input_european_co2_pipelines(w):
+    european_co2_pipelines = config_provider("sector", "european_co2_pipelines")(w)
+    if european_co2_pipelines["enable"]:
+        inputs= {
+            "buses_offshore": resources("european_co2_pipelines/buses_offshore_s_{clusters}_{opts}.csv"),
+            "links_co2_pipeline": resources("european_co2_pipelines/links_co2_pipeline_s_{clusters}_{opts}.csv"),
+            "stores_co2": resources("european_co2_pipelines/stores_co2_s_{clusters}_{opts}.csv"),
+        }
+    else :
+        inputs= {
+            "buses_offshore": [],
+            "links_co2_pipeline": [],
+            "stores_co2": [],
+        }
+    return inputs
+
+
+rule plot_map:
+    params:
+        plotting_all=config_provider("plotting", "all"),
+        plotting_fig=config_provider("plotting", "figures", "plot_pcipmi_map"),
+        salt_cavern_settings=config_provider("sector", "hydrogen_underground_storage_locations"),
+    input:
+        unpack(input_european_co2_pipelines),
+        regions_onshore = resources("regions_onshore_base_s_{clusters}.geojson"),
+        regions_offshore = resources("regions_offshore_base_s_{clusters}.geojson"),
+        sequestration_potential=resources(
+            "co2_sequestration_potential_base_s_{clusters}.geojson"
+        ),
+    output:
+        map= "results/" + PREFIX+"/maps/map_{clusters}_{run}.pdf",
+    log:
+        "results/" + PREFIX + "/logs/plot_pcipmi_map_{clusters}_{run}.log",
+    benchmark:
+        "results/" + PREFIX + "/benchmark/plot_pcipmi_map_{clusters}_{run}",
+    conda:
+        "../envs/environment.yaml"
+    script:
+        "../scripts/plot_map.py"
+
+
+rule plot_balances_overview:
+    params:
+        plotting_fig=config_provider("plotting", "figures", "plot_balances_overview"),
+    input:
+        balances=expand(
+            RESULTS + "csvs/energy_balance.csv",
+            **config["scenario"],
+            run=config["run"]["name"],
+        ),
+    output:
+        plot= "results/" + PREFIX+"/graphs/balances_overview_{carrier}.pdf",
+    log:
+        "results/" + PREFIX + "/logs/plot_balances_overview_{carrier}.log",
+    benchmark:
+        "results/" + PREFIX + "/benchmark/plot_balances_overview_{carrier}",
+    conda:
+        "../envs/environment.yaml"
+    script:
+        "../scripts/plot_balances_overview.py"
