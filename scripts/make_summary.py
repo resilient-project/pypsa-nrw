@@ -32,6 +32,7 @@ OUTPUTS = [
     "nodal_capacities",
     "nodal_energy_balance",
     "nodal_capacity_factors",
+    "price_time_series",
 ]
 
 
@@ -296,6 +297,50 @@ def calculate_market_values(n: pypsa.Network) -> pd.Series:
     )
 
 
+def calculate_price_time_series(n: pypsa.Network) -> pd.DataFrame:
+    """
+    Per-snapshot demand-weighted mean bus price across all regions
+    for selected carriers. Keeps the full time dimension.
+
+    Returns
+    -------
+    DataFrame:
+        index   = snapshots
+        columns = carriers
+    """
+    target_carriers = ["AC", "co2 stored", "co2", "co2 sequestered", "H2"]
+
+    result = {}
+
+    for carrier in target_carriers:
+        # withdrawal per region per snapshot (T × buses)
+        load = n.statistics.withdrawal(
+            groupby="bus",
+            aggregate_time=False,
+            bus_carrier=carrier,
+            aggregate_across_components=True,
+        ).T
+
+        if load.empty or load.sum().sum() == 0:
+            continue
+
+        # marginal prices for those buses
+        price = n.buses_t.marginal_price.loc[:, n.buses.carrier == carrier]
+        price = price.reindex(columns=load.columns, fill_value=1)
+
+        # per-snapshot demand-weighted mean price (keeps time dimension)
+        p_t = (load * price).sum(axis=1) / load.sum(axis=1)
+
+        result[carrier] = p_t
+
+    df = pd.DataFrame(result).sort_index(axis=1)
+
+    # add snapshot weights as first column
+    df.insert(0, "snapshot_weight", n.snapshot_weightings.generators)
+
+    return df
+
+
 if __name__ == "__main__":
     if "snakemake" not in globals():
         from scripts._helpers import mock_snakemake
@@ -306,7 +351,7 @@ if __name__ == "__main__":
             opts="",
             sector_opts="",
             planning_horizons="2035",
-            run="forecast-co2-pipelines-min-ccs",
+            run="forecast-delayed-co2-pipelines-min-ccs",
             configfiles="config/config.nrw-workshop.yaml",
         )
 

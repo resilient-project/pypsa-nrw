@@ -115,3 +115,12 @@ rule plot_statistics:
                 run=config["run"]["name"],
             ),
         ],
+
+
+rule make_summaries:
+    input:
+        lambda w: expand(
+            RESULTS + "csvs/individual/nodal_costs_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+            run=config["run"]["name"],
+            **config["scenario"],
+        ),

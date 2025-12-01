@@ -238,6 +238,8 @@ rule make_summary:
         + "csvs/individual/market_values_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
         metrics=RESULTS
         + "csvs/individual/metrics_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+        price_time_series=RESULTS
+        + "csvs/individual/price_time_series_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
     threads: 1
     resources:
         mem_mb=8000,
@@ -985,3 +987,22 @@ rule plot_balances_overview:
         "../envs/environment.yaml"
     script:
         "../scripts/plot_balances_overview.py"
+
+
+rule plot_price_progressions:
+    input:
+        lambda w: expand(
+            RESULTS + "csvs/individual/price_time_series_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.csv",
+            **config["scenario"],
+            run=w.run,
+        )
+    output:
+        plot = RESULTS + "graphs/price_progressions_s_{clusters}_{opts}_{sector_opts}.pdf"
+    log:
+        RESULTS + "logs/plot_price_progressions/base_s_{clusters}_{opts}_{sector_opts}.log"
+    benchmark:
+        RESULTS + "benchmarks/plot_price_progressions/base_s_{clusters}_{opts}_{sector_opts}"
+    conda:
+        "../envs/environment.yaml"
+    script:
+        "../scripts/plot_price_progressions.py"
