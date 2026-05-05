@@ -1222,6 +1222,37 @@ rule build_industrial_energy_demand_per_node:
         "Building industrial energy demand per network node for {wildcards.clusters} clusters and {wildcards.planning_horizons} planning horizon"
     script:
         scripts("build_industrial_energy_demand_per_node.py")
+        
+
+rule build_industrial_energy_demand_per_node_forecast:
+    params:
+        forecast_industry=config_provider("industry", "forecast_industry"),
+    input:
+        industrial_energy_demand_per_node=resources(
+            "industrial_energy_demand_base_s_{clusters}_{planning_horizons}.csv"
+        ),
+        industrial_energy_demand_forecast="data/forecast_industry/{industry_scenario}/energy_demand.csv",
+        industrial_process_emissions_forecast="data/forecast_industry/{industry_scenario}/process_emissions.csv",
+        carrier_mapping="data/forecast_industry/mapping.csv",
+        nuts3_shapes=resources("nuts3_shapes.geojson"),
+        regions=resources("regions_onshore_base_s_{clusters}.geojson"),
+    output:
+        industrial_energy_demand_per_node_forecast=resources("industrial_energy_demand_base_s_{clusters}_{planning_horizons}_forecast_{industry_scenario}.csv"),
+    threads: 1
+    resources:
+        mem_mb=1000,
+    log:
+        logs(
+            "build_industrial_energy_demand_per_node_forecast_{clusters}_{planning_horizons}_{industry_scenario}.log"
+        ),
+    benchmark:
+        benchmarks(
+            "build_industrial_energy_demand_per_node_forecast_{clusters}_{planning_horizons}_{industry_scenario}"
+        ),
+    conda:
+        "../envs/environment.yaml"
+    script:
+        "../scripts/build_industrial_energy_demand_per_node_forecast.py"
 
 
 rule build_industrial_energy_demand_per_country_today:

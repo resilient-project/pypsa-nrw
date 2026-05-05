@@ -1,0 +1,151 @@
+
+# docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#run
+run:
+  prefix: ""
+  name: ""
+  scenarios:
+    enable: false
+    file: config/scenarios.yaml
+  disable_progressbar: false
+  shared_resources:
+    policy: false
+    exclude: []
+  use_shadow_directory: false
+
+# docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#foresight
+foresight: myopic
+
+# docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#scenario
+scenario:
+  clusters:
+  - 37
+  opts:
+  - ""
+  sector_opts:
+  - ""
+  planning_horizons:
+  - 2025
+  - 2030
+  - 2035
+  - 2040
+  - 2045
+  - 2050
+
+# docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#countries
+countries:
+- AL
+- AT
+- BA
+- BE
+- BG
+- CH
+- CZ
+- DE
+- DK
+- EE
+- ES
+- FI
+- FR
+- GB
+- GR
+- HR
+- HU
+- IE
+- IT
+- LT
+- LU
+- LV
+- ME
+- MK
+- NL
+- 'NO'
+- PL
+- PT
+- RO
+- RS
+- SE
+- SI
+- SK
+- XK
+
+
+# docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#co2_budget
+co2_budget:
+  2020: 0.72
+  2025: 0.648
+  2030: 0.45
+  2035: 0.25
+  2040: 0.1
+  2045: 0.05
+  2050: 0.0
+
+# docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#electricity
+electricity:
+  extendable_carriers:
+    Generator:
+    - solar
+    - "solar-hsat"
+    - onwind
+    - "offwind-ac"
+    - "offwind-dc"
+    - "offwind-float"
+    - OCGT
+    - CCGT
+    StorageUnit: []
+    Store:
+    - battery
+    - H2
+    Link: []
+  renewable_carriers:
+  - solar
+  - "solar-hsat"
+  - onwind
+  - "offwind-ac"
+  - "offwind-dc"
+  - "offwind-float"
+  - hydro
+  
+# docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#pypsa_eur
+pypsa_eur:
+  Bus:
+  - AC
+  Link:
+  - DC
+  Generator:
+  - onwind
+  - "offwind-ac"
+  - "offwind-dc"
+  - "offwind-float"
+  - "solar-hsat"
+  - solar
+  - ror
+  - nuclear
+  StorageUnit:
+  - PHS
+  - hydro
+  Store: []
+
+clustering:
+  temporal:
+    resolution_elec: false
+    resolution_sector: 2190SEG # 144h #2190SEG # 365h # 720h
+
+
+# docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#sector
+sector:
+  transport: true
+  heating: true
+  biomass: true
+  industry: true
+  shipping: true
+  aviation: true
+  agriculture: true
+  fossil_fuels: true
+
+industry: # FORECAST to PyPSA_Eur mapping in data/forecast_industry/mapping.csv
+  forecast_industry:
+    enable: false
+    current_electricity_year: 2021 # must be >= 2021 (earliest FORECAST data year)
+    strict_industry_validation: true # if true, raises error if industry demand cannot be mapped
+    forecast_scenario: Orientierungsszenario_Strom
+    mto_route: true
