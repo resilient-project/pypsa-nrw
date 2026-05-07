@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: MIT
 
+import math
+
 
 rule build_population_layouts:
     input:
@@ -144,6 +146,50 @@ rule cluster_gas_network:
         "Clustering gas network for {wildcards.clusters} clusters"
     script:
         scripts("cluster_gas_network.py")
+
+
+rule build_transmission_delaunay_graph:
+    input:
+        network=resources("networks/base_s_{clusters}.nc"),
+        offshore_shapes=resources("offshore_shapes.geojson"),
+    output:
+        delaunay_graph=resources("transmission/delaunay_graph_{clusters}.geojson"),
+    log:
+        logs("build_transmission_delaunay_graph_{clusters}.log"),
+    benchmark:
+        benchmarks("build_transmission_delaunay_graph/{clusters}")
+    resources:
+        mem_mb=4000,
+    message:
+        "Building Delaunay triangulation graph for {wildcards.clusters} clusters"
+    script:
+        scripts("build_transmission_delaunay_graph.py")
+
+
+rule build_transmission_topology:
+    input:
+        delaunay_graph=resources("transmission/delaunay_graph_{clusters}.geojson"),
+    output:
+        candidates=resources(
+            "transmission/candidates_{clusters}_min_{min_degree}_maxoffdist_{max_offdist}_km.geojson"
+        ),
+    log:
+        logs(
+            "build_transmission_topology_{clusters}_min_{min_degree}_maxoffdist_{max_offdist}.log"
+        ),
+    benchmark:
+        benchmarks(
+            "build_transmission_topology/{clusters}_min_{min_degree}_maxoffdist_{max_offdist}"
+        )
+    resources:
+        mem_mb=2000,
+    params:
+        min_degree=lambda w: int(w.min_degree),
+        max_offdist=lambda w: float(w.max_offdist),
+    message:
+        "Building transmission topology for {wildcards.clusters} clusters (min_degree={wildcards.min_degree}, max_offdist={wildcards.max_offdist} km)"
+    script:
+        scripts("build_transmission_topology.py")
 
 
 rule build_daily_heat_demand:
@@ -1593,10 +1639,58 @@ def input_heat_source_power(w):
     }
 
 
+def input_transmission_candidates(w):
+    """Generate transmission candidate file inputs for enabled transmission carriers."""
+    candidates = {}
+    for carrier in ("hydrogen", "carbon_dioxide"):
+        carrier_cfg = config["transmission"][carrier]
+        if not carrier_cfg["enable"]:
+            continue
+        key = f"{carrier}_transmission_candidates"
+        min_degree = carrier_cfg["gabriel_filter_min_degree"]
+        max_offdist = carrier_cfg["max_offshore_haversine_distance"]
+        if min_degree > 0 or max_offdist < float("inf"):
+            candidates[key] = resources(
+                f"transmission/candidates_{{clusters}}_min_{min_degree}_maxoffdist_{max_offdist}_km.geojson"
+            )
+        else:
+            candidates[key] = resources(
+                "transmission/delaunay_graph_{clusters}.geojson"
+            )
+    return candidates
+
+
+def input_co2_projects(w):
+    co2_projects = config_provider(
+        "transmission", "carbon_dioxide", "projects", "enable"
+    )(w)
+    if co2_projects:
+        inputs = {
+            "co2_buses_offshore": resources(
+                "transmission/carbon_dioxide_projects/co2_buses_offshore_s_{clusters}_{opts}.csv"
+            ),
+            "co2_links": resources(
+                "transmission/carbon_dioxide_projects/co2_links_s_{clusters}_{opts}.csv"
+            ),
+            "co2_stores": resources(
+                "transmission/carbon_dioxide_projects/co2_stores_s_{clusters}_{opts}.csv"
+            ),
+        }
+    else:
+        inputs = {
+            "co2_buses_offshore": [],
+            "co2_links": [],
+            "co2_stores": [],
+        }
+    return inputs
+
+
 rule prepare_sector_network:
     input:
         unpack(input_profile_offwind),
         unpack(input_heat_source_power),
+        unpack(input_transmission_candidates),
+        unpack(input_co2_projects),
         **rules.cluster_gas_network.output,
         **rules.build_gas_input_locations.output,
         snapshot_weightings=resources(
@@ -1745,9 +1839,7 @@ rule prepare_sector_network:
         sector=config_provider("sector"),
         industry=config_provider("industry"),
         renewable=config_provider("renewable"),
-        lines=config_provider("lines"),
         pypsa_eur=config_provider("pypsa_eur"),
-        length_factor=config_provider("lines", "length_factor"),
         planning_horizons=config_provider("scenario", "planning_horizons"),
         countries=config_provider("countries"),
         adjustments=config_provider("adjustments", "sector"),
@@ -1768,7 +1860,40 @@ rule prepare_sector_network:
         temperature_limited_stores=config_provider(
             "sector", "district_heating", "temperature_limited_stores"
         ),
+        transmission=config_provider("transmission"),
     message:
         "Preparing integrated sector-coupled energy network for {wildcards.clusters} clusters, {wildcards.planning_horizons} planning horizon, {wildcards.opts} electric options and {wildcards.sector_opts} sector options"
     script:
         scripts("prepare_sector_network.py")
+
+
+rule build_carbon_dioxide_projects:
+    input:
+        network=resources("networks/base_s_{clusters}_elec_{opts}.nc"),
+        regions_onshore=resources("regions_onshore_base_s_{clusters}.geojson"),
+        regions_offshore=resources("regions_offshore_base_s_{clusters}.geojson"),
+        scope=resources("europe_shape.geojson"),
+        kml="data/nrw/oge-grid/CCUCCS Projektsammlung.kml",
+        transport_volume="data/nrw/oge-grid/transport_volume.csv",
+        co2_sequestration_potential="data/nrw/oge-grid/co2_sequestration_potential.csv",
+    output:
+        co2_buses_offshore=resources(
+            "transmission/carbon_dioxide_projects/co2_buses_offshore_s_{clusters}_{opts}.csv"
+        ),
+        co2_links=resources(
+            "transmission/carbon_dioxide_projects/co2_links_s_{clusters}_{opts}.csv"
+        ),
+        co2_stores=resources(
+            "transmission/carbon_dioxide_projects/co2_stores_s_{clusters}_{opts}.csv"
+        ),
+    log:
+        logs("build_carbon_dioxide_projects_{clusters}_{opts}.log"),
+    benchmark:
+        benchmarks("build_carbon_dioxide_projects_{clusters}_{opts}")
+    conda:
+        "../envs/environment.yaml"
+    threads: 1
+    resources:
+        mem_mb=2000,
+    script:
+        "../scripts/build_carbon_dioxide_projects.py"

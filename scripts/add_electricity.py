@@ -14,8 +14,9 @@ preceding rules together into a detailed PyPSA network that is stored in
 ``networks/base_s_{clusters}_elec.nc``. It includes:
 
 - today's transmission topology and transfer capacities (optionally including
-  lines which are under construction according to the config settings ``lines:
-  under_construction`` and ``links: under_construction``),
+    lines which are under construction according to the config settings
+    ``transmission: lines: under_construction`` and
+    ``links: under_construction``),
 - today's thermal and hydro power generation capacities (for the technologies
   listed in the config setting ``electricity: conventional_carriers``), and
 - today's load time-series (upsampled in a top-down approach according to
@@ -1128,6 +1129,13 @@ def attach_stores(
             "Fuel Cell" if lookup_discharge == "fuel cell" else "discharger"
         )
 
+        discharge_capital_cost = (
+            0.0 if "bicharger" in lookup else costs.at[lookup_discharge, "capital_cost"]
+        )
+        if lookup_discharge == "fuel cell":
+            # NB: fuel cell investment cost is per MWel
+            discharge_capital_cost *= costs.at[lookup_discharge, "efficiency"]
+
         n.add(
             "Bus",
             bus_names,
@@ -1172,6 +1180,7 @@ def attach_stores(
             bus1=buses_i,
             carrier=f"{carrier} {discharge_name}",
             efficiency=costs.at[lookup_discharge, "efficiency"] ** roundtrip_correction,
+            capital_cost=discharge_capital_cost,
             p_nom_extendable=True,
             marginal_cost=costs.at[lookup_discharge, "marginal_cost"],
             lifetime=costs.at[lookup_discharge, "lifetime"],

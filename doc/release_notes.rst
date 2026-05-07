@@ -8,6 +8,8 @@ Release Notes
 
 .. Upcoming Release
 .. =================
+* Fix: Re-introduce capital costs for non-bicharging discharge links in ``add_electricity.py``, e.g. fuel cells.
+
 * The lockfile update workflow now excludes packages published within the last 7 days to reduce the risk of pulling in broken or yanked releases (https://github.com/PyPSA/pypsa-eur/pull/2130).
 
 * The industry reference year and the ammonia production data have been updated to 2023 (https://github.com/PyPSA/pypsa-eur/pull/2103)
@@ -20,7 +22,31 @@ Release Notes
 
 * perf: Optimize dask settings for computing weather-dependent profiles (https://github.com/PyPSA/pypsa-eur/pull/2137).
 
+* Fix: correct definition of `marginal_cost` for those links were `vom` values from technology cost datasets are defined per units of output (e.g., electricity) (https://github.com/PyPSA/pypsa-eur/pull/2154).
+
 * feat: Improve the config validation to cover scenario management (https://github.com/PyPSA/pypsa-eur/pull/2155).
+
+- Added solar rooftop ratio setting to ``add_existing_baseyear`` for heuristically splitting existing solar capacity between rooftop and utility-scale (defaults to a 50:50 split).
+
+* feat: Add new rule :mod:`build_transmission_topology` to generate greenfield pipeline investment candidates
+  (H2, CO2) using Delaunay triangulation with optional Gabriel graph filtering and minimum-degree backfilling,
+  replacing the former AC-topology-based approach. A ``max_offshore_haversine_distance`` setting per carrier
+  limits offshore corridor lengths (https://github.com/PyPSA/pypsa-eur/pull/2153).
+
+* refactor: Rename ``transmission_projects`` to ``transmission.electricity.projects`` and
+  ``gas_distribution_grid`` to ``gas_distribution_grid_cost`` to better reflect their semantics
+  (https://github.com/PyPSA/pypsa-eur/pull/2153). Rename `sector.electricity_grid_connection` to `sector.electricity_grid_connection_cost`
+  and `gas_distribution_grid` to `gas_distribution_grid_cost`.
+
+**Breaking changes**
+
+* Consolidate all carrier-specific transmission settings under a new top-level ``transmission`` config
+  key with sub-keys per carrier (``electricity``, ``hydrogen``, ``carbon_dioxide``, ``gas``,
+  ``electricity_distribution``), replacing the previously scattered ``lines``, ``links``, ``transformers``,
+  ``transmission_projects``, ``base_network``, ``transmission_limit``, and sector-level keys such as
+  ``H2_network``, ``gas_network``, ``co2_network``, ``transmission_efficiency``, ``H2_retrofit``, and
+  ``gas_distribution_grid``. Carrier efficiencies, H2 retrofit settings, and distribution grid costs are
+  now nested under the respective carrier sub-key (https://github.com/PyPSA/pypsa-eur/pull/2153).
 
 PyPSA-Eur v2026.02.0 (18th February 2026)
 =========================================

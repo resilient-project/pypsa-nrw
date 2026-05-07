@@ -1,0 +1,100 @@
+# -*- coding: utf-8 -*-
+# SPDX-FileCopyrightText: Contributors to PyPSA-Eur <https://github.com/pypsa/pypsa-eur>
+#
+# SPDX-License-Identifier: MIT
+
+# This file is used to define the scenarios that are run by snakemake. Each entry on the first level is a scenario. Each scenario can contain configuration overrides with respect to the config/config.yaml settings.
+#
+# Example
+#
+# custom-scenario: # name of the scenario
+#   electricity:
+#       renewable_carriers: [wind, solar] # override the list of renewable carriers
+
+oge-only-offshore-storage:
+  transmission:
+    carbon_dioxide:
+      enable: false
+      gabriel_filter_min_degree: 0
+      max_offshore_haversine_distance: 300
+      length_factor: 1.25
+      cost_factor: 1
+      projects:
+        enable: true
+        extendable: false
+        capacity_mode: keep
+        custom_capacity_value: 1328
+  sector:
+    regional_co2_sequestration_potential:
+      enable: true
+      include_onshore: false
+  clustering:
+    temporal:
+      resolution_elec: false
+      resolution_sector: 337h
+
+greenfield-oge-fixed-offshore-storage:
+  transmission:
+    carbon_dioxide:
+      enable: true
+      gabriel_filter_min_degree: 0
+      max_offshore_haversine_distance: 300
+      length_factor: 1.25
+      cost_factor: 1
+      projects:
+        enable: true
+        extendable: false
+        capacity_mode: keep
+        custom_capacity_value: 1328
+  sector:
+    regional_co2_sequestration_potential:
+      enable: true
+      include_onshore: false
+  clustering:
+    temporal:
+      resolution_elec: false
+      resolution_sector: 337h
+
+greenfield-oge-extendable-offshore-onshore-storage:
+  transmission:
+    carbon_dioxide:
+      enable: true
+      gabriel_filter_min_degree: 0
+      max_offshore_haversine_distance: 300
+      length_factor: 1.25
+      cost_factor: 1
+      projects:
+        enable: true
+        extendable: true
+        capacity_mode: zero
+        custom_capacity_value: 1328
+  sector:
+    regional_co2_sequestration_potential:
+      enable: true
+      include_onshore: true
+  clustering:
+    temporal:
+      resolution_elec: false
+      resolution_sector: 337h
+
+greenfield-oge-extendable-only-offshore-storage:
+  transmission:
+    carbon_dioxide:
+      enable: true
+      gabriel_filter_min_degree: 0
+      max_offshore_haversine_distance: 300
+      length_factor: 1.25
+      cost_factor: 1
+      projects:
+        enable: true
+        extendable: true
+        capacity_mode: zero
+        custom_capacity_value: 1328
+  sector:
+    regional_co2_sequestration_potential:
+      enable: true
+      include_onshore: false
+  clustering:
+    temporal:
+      resolution_elec: false
+      resolution_sector: 337h

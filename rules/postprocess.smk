@@ -62,7 +62,9 @@ if config["foresight"] != "perfect":
             mem_mb=10000,
         params:
             plotting=config_provider("plotting"),
-            transmission_limit=config_provider("electricity", "transmission_limit"),
+            transmission_limit=config_provider(
+                "transmission", "electricity", "transmission_limit"
+            ),
         message:
             "Plotting power network for {wildcards.clusters} clusters, {wildcards.opts} electric options, {wildcards.sector_opts} sector options and {wildcards.planning_horizons} planning horizons"
         script:
@@ -120,6 +122,32 @@ if config["foresight"] != "perfect":
             "Plotting methane network for {wildcards.clusters} clusters, {wildcards.opts} electric options, {wildcards.sector_opts} sector options and {wildcards.planning_horizons} planning horizon"
         script:
             scripts("plot_gas_network.py")
+
+    rule plot_carbon_dioxide_network:
+        input:
+            network=RESULTS
+            + "networks/base_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.nc",
+            regions=resources("regions_onshore_base_s_{clusters}.geojson"),
+        output:
+            map=RESULTS
+            + "maps/static/base_s_{clusters}_{opts}_{sector_opts}-co2_network_{planning_horizons}.pdf",
+        log:
+            RESULTS
+            + "logs/plot_carbon_dioxide_network/base_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.log",
+        benchmark:
+            (
+                RESULTS
+                + "benchmarks/plot_carbon_dioxide_network/base_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}"
+            )
+        threads: 2
+        resources:
+            mem_mb=10000,
+        params:
+            plotting=config_provider("plotting"),
+        message:
+            "Plotting carbon dioxide network for {wildcards.clusters} clusters, {wildcards.opts} electric options, {wildcards.sector_opts} sector options and {wildcards.planning_horizons} planning horizons"
+        script:
+            scripts("plot_carbon_dioxide_network.py")
 
     rule plot_balance_map:
         input:
