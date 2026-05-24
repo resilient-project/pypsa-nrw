@@ -163,7 +163,7 @@ data:
     source: archive
     version: latest
   swiss_energy_balances:
-    source: archive
+    source: primary
     version: latest
   synthetic_electricity_demand:
     source: archive
@@ -175,5 +175,5 @@ data:
     source: archive
     version: latest
   bfs_gdp_and_population:
-    source: archive
+    source: primary
     version: latest
