@@ -11,7 +11,7 @@
 #   electricity:
 #       renewable_carriers: [wind, solar] # override the list of renewable carriers
 
-oge-grid___offshore-co2:
+oge-grid___Ref___offshore-co2:
   transmission:
     carbon_dioxide:
       enable: false
@@ -35,9 +35,9 @@ oge-grid___offshore-co2:
   clustering:
     temporal:
       resolution_elec: false
-      resolution_sector: 337h
+      resolution_sector: 337h # 144h #2190SEG # 365h # 720h
 
-endo-grid___offshore+onshore-co2:
+endo-grid___CCS-Exp__offshore+onshore-co2:
   transmission:
     carbon_dioxide:
       enable: true
@@ -63,7 +63,34 @@ endo-grid___offshore+onshore-co2:
       resolution_elec: false
       resolution_sector: 337h
 
-endo-grid___offshore-co2:
+endo-grid___Ref___offshore-co2:
+  transmission:
+    carbon_dioxide:
+      enable: true
+      gabriel_filter_min_degree: 0
+      max_offshore_haversine_distance: 300
+      length_factor: 1.25
+      cost_factor: 1
+      projects:
+        enable: true
+        extendable: true
+        capacity_mode: zero
+        custom_capacity_value: 1328
+      short_pipeline_carrier:
+        enable: true
+        suffix: short
+        max_haversine_distance: 100
+  sector:
+    regional_co2_sequestration_potential:
+      enable: true
+      include_onshore: false
+  clustering:
+    temporal:
+      resolution_elec: false
+      resolution_sector: 337h
+
+
+endo-grid___CCS-Exp__offshore-co2:
   transmission:
     carbon_dioxide:
       enable: true

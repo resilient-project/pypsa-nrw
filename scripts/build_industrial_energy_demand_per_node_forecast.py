@@ -198,7 +198,9 @@ if __name__ == "__main__":
         )
     
     ied_forecast = ied_forecast[param_cols + [current_electricity_year, year]]
-    ipe_forecast = ipe_forecast[param_cols + [current_electricity_year, year, "latitude", "longitude"]]
+    # Process emissions only need the specific year, not current_electricity_year
+    ipe_cols = [c for c in param_cols if c in ipe_forecast.columns]
+    ipe_forecast = ipe_forecast[ipe_cols + [year, "latitude", "longitude"]]
 
     # ------------------ Step 4: Apply carrier mapping ------------------
     # Map using carrier_mapping

@@ -1226,7 +1226,7 @@ rule build_industrial_production_per_node:
             benchmarks(
                 "build_industrial_production_per_node/s_{clusters}_{planning_horizons}"
             )
-        )
+         )
     threads: 1
     resources:
         mem_mb=1000,
@@ -1234,6 +1234,126 @@ rule build_industrial_production_per_node:
         "Distributing industrial production to network nodes for {wildcards.clusters} clusters and {wildcards.planning_horizons} planning horizon"
     script:
         scripts("build_industrial_production_per_node.py")
+
+
+# =============================================================================
+# FORECAST Industry Preprocessing Rules
+# =============================================================================
+
+def get_available_industry_scenarios():
+    """Extract available industry scenarios from config."""
+    try:
+        config_scenarios = config.get("industry", {}).get("forecast_industry", {}).get("available_scenarios", [])
+        if not config_scenarios:
+            return []  # Return empty list instead of raising error
+        return config_scenarios
+    except Exception:
+        return []  # Graceful fallback if config not available yet
+
+
+rule prepare_forecast_mapping:
+    """Convert mapping.xlsx to mapping.csv for carrier name translation."""
+    input:
+        mapping_xlsx="data/forecast_industry/mapping.xlsx",
+    output:
+        mapping_csv="data/forecast_industry/mapping.csv",
+    log:
+        "logs/prepare_forecast_mapping.log"
+    benchmark:
+        "benchmarks/prepare_forecast_mapping.txt"
+    resources:
+        mem_mb=1000,
+    message:
+        "Preparing FORECAST industry carrier mapping (xlsx → csv)"
+    script:
+        "../scripts/build_industry_forecast/mapping_xls_to_csv.py"
+
+
+# FORECAST preprocessing rules - run manually with:
+# pixi run -e default snakemake prepare_forecast_energy_demand prepare_forecast_process_emissions
+# (Do NOT auto-trigger as automatic dependencies due to wildcard mismatches)
+
+# rule prepare_forecast_energy_demand:
+#     """Preprocess FORECAST energy demand workbook: translate, validate, apply MtO conversion."""
+#     input:
+#         energy_demand_xlsx="data/forecast_industry/industrial_energy_demand_forecast.xlsx",
+#     output:
+#         expand(
+#             "data/forecast_industry/{industry_scenario}/energy_demand.csv",
+#             industry_scenario=get_available_industry_scenarios(),
+#         ),
+#     log:
+#         "logs/prepare_forecast_energy_demand.log"
+#     benchmark:
+#         "benchmarks/prepare_forecast_energy_demand.txt"
+#     resources:
+#         mem_mb=2000,
+#     params:
+#         config_forecast=config_provider("industry", "forecast_industry"),
+#     message:
+#         "Preparing FORECAST industry energy demand (all scenarios)"
+#     script:
+#         "../scripts/build_industry_forecast/prepar_forecast_industry_energy_demand.py"
+
+
+# rule prepare_forecast_process_emissions:
+#     """Preprocess FORECAST process emissions: translate, geo-locate coordinates → NUTS3 regions."""
+#     input:
+#         process_emissions_xlsx="data/forecast_industry/industrial_process_emission_forecast.xlsx",
+#         nuts3_shapes=resources("nuts3_shapes.geojson"),
+#     output:
+#         expand(
+#             "data/forecast_industry/{industry_scenario}/process_emissions.csv",
+#             industry_scenario=get_available_industry_scenarios(),
+#         ),
+#     log:
+#         "logs/prepare_forecast_process_emissions.log"
+#     benchmark:
+#         "benchmarks/prepare_forecast_process_emissions.txt"
+#     resources:
+#         mem_mb=2000,
+#     params:
+#         config_forecast=config_provider("industry", "forecast_industry"),
+#     message:
+#         "Preparing FORECAST industry process emissions (all scenarios)"
+#     script:
+#         "../scripts/build_industry_forecast/prepar_forecast_industry_process_emission.py"
+
+
+rule build_industrial_energy_demand_per_node_forecast:
+    """Build nodal industrial demand by merging FORECAST data with PyPSA baseline """
+    params:
+        forecast_industry=config_provider("industry", "forecast_industry"),
+    input:
+        industrial_energy_demand_per_node=resources(
+            "industrial_energy_demand_base_s_{clusters}_{planning_horizons}.csv"
+        ),
+        industrial_energy_demand_forecast="data/forecast_industry/{industry_scenario}/energy_demand.csv",
+        industrial_process_emissions_forecast="data/forecast_industry/{industry_scenario}/process_emissions.csv",
+        carrier_mapping="data/forecast_industry/mapping.csv",
+        nuts3_shapes=resources("nuts3_shapes.geojson"),
+        regions=resources("regions_onshore_base_s_{clusters}.geojson"),
+    output:
+        industrial_energy_demand_per_node_forecast=resources(
+            "industrial_energy_demand_base_s_{clusters}_{planning_horizons}_forecast_{industry_scenario}.csv"
+        ),
+    threads: 1
+    resources:
+        mem_mb=1000,
+    log:
+        logs(
+            "build_industrial_energy_demand_per_node_forecast_{clusters}_{planning_horizons}_{industry_scenario}.log"
+        ),
+    benchmark:
+        benchmarks(
+            "build_industrial_energy_demand_per_node_forecast/{clusters}_{planning_horizons}_{industry_scenario}"
+        ),
+    conda:
+        "../envs/environment.yaml"
+    message:
+        "Building nodal FORECAST industrial demand for {wildcards.clusters} clusters, {wildcards.planning_horizons} horizon, {wildcards.industry_scenario} scenario"
+    script:
+        "../scripts/build_industrial_energy_demand_per_node_forecast.py"
 
 
 rule build_industrial_energy_demand_per_node:
@@ -1268,37 +1388,6 @@ rule build_industrial_energy_demand_per_node:
         "Building industrial energy demand per network node for {wildcards.clusters} clusters and {wildcards.planning_horizons} planning horizon"
     script:
         scripts("build_industrial_energy_demand_per_node.py")
-        
-
-rule build_industrial_energy_demand_per_node_forecast:
-    params:
-        forecast_industry=config_provider("industry", "forecast_industry"),
-    input:
-        industrial_energy_demand_per_node=resources(
-            "industrial_energy_demand_base_s_{clusters}_{planning_horizons}.csv"
-        ),
-        industrial_energy_demand_forecast="data/forecast_industry/{industry_scenario}/energy_demand.csv",
-        industrial_process_emissions_forecast="data/forecast_industry/{industry_scenario}/process_emissions.csv",
-        carrier_mapping="data/forecast_industry/mapping.csv",
-        nuts3_shapes=resources("nuts3_shapes.geojson"),
-        regions=resources("regions_onshore_base_s_{clusters}.geojson"),
-    output:
-        industrial_energy_demand_per_node_forecast=resources("industrial_energy_demand_base_s_{clusters}_{planning_horizons}_forecast_{industry_scenario}.csv"),
-    threads: 1
-    resources:
-        mem_mb=1000,
-    log:
-        logs(
-            "build_industrial_energy_demand_per_node_forecast_{clusters}_{planning_horizons}_{industry_scenario}.log"
-        ),
-    benchmark:
-        benchmarks(
-            "build_industrial_energy_demand_per_node_forecast_{clusters}_{planning_horizons}_{industry_scenario}"
-        ),
-    conda:
-        "../envs/environment.yaml"
-    script:
-        "../scripts/build_industrial_energy_demand_per_node_forecast.py"
 
 
 rule build_industrial_energy_demand_per_country_today:
@@ -1747,8 +1836,16 @@ rule prepare_sector_network:
         busmap_s=resources("busmap_base_s.csv"),
         busmap=resources("busmap_base_s_{clusters}.csv"),
         clustered_pop_layout=resources("pop_layout_base_s_{clusters}.csv"),
-        industrial_demand=resources(
-            "industrial_energy_demand_base_s_{clusters}_{planning_horizons}.csv"
+        industrial_demand=lambda w: (
+            (
+                resources(
+                    f"industrial_energy_demand_base_s_{w.clusters}_{w.planning_horizons}_forecast_{config_provider('industry', 'forecast_industry', 'scenario_mapping')(w)[w.run]}.csv"
+                )
+                if w.run in config_provider("industry", "forecast_industry", "scenario_mapping")(w)
+                else resources(f"industrial_energy_demand_base_s_{w.clusters}_{w.planning_horizons}.csv")
+            )
+            if config_provider("industry", "forecast_industry", "enable")(w) is True
+            else resources(f"industrial_energy_demand_base_s_{w.clusters}_{w.planning_horizons}.csv")
         ),
         hourly_heat_demand_total=resources(
             "hourly_heat_demand_total_base_s_{clusters}.nc"

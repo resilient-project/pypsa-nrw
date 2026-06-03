@@ -4707,6 +4707,12 @@ def add_industry(
     # 1e6 to convert TWh to MWh
     industrial_demand = pd.read_csv(industrial_demand_file, index_col=0) * 1e6 * nyears
 
+    # Log which industrial demand file was used
+    if "forecast" in industrial_demand_file:
+        logger.info(f"Using FORECAST industrial demand: {industrial_demand_file}")
+    else:
+        logger.info(f"Using standard PyPSA industrial demand: {industrial_demand_file}")
+
     if not options["biomass"]:
         raise ValueError(
             "Industry demand includes solid biomass, but `sector.biomass` is disabled. "
