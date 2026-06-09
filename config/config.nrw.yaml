@@ -11,9 +11,9 @@ run:
   prefix: "nrw"
   name:
   - oge-grid___Ref___offshore-co2
-  # - endo-grid___Ref___offshore-co2
-  # - endo-grid___CCS-Exp__offshore-co2
-  # - endo-grid___CCS-Exp__offshore+onshore-co2
+  - endo-grid___Ref___offshore-co2
+  - endo-grid___CCS-Exp__offshore-co2
+  - endo-grid___CCS-Exp__offshore+onshore-co2
   scenarios:
     enable: true
     file: config/scenarios.nrw.yaml
@@ -42,21 +42,21 @@ scenario:
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#countries
 countries:
-# - AT
-# - BE
-# - CH
-# - CZ
+- AT
+- BE
+- CH
+- CZ
 - DE
-# - DK
-# - FR
-# - GB
-# - LU
-# - NL
-# - "NO"
-# - PL
-# - SE
-# - ES
-# - IT
+- DK
+- FR
+- GB
+- LU
+- NL
+- "NO"
+- PL
+- SE
+- ES
+- IT
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#electricity
 electricity:

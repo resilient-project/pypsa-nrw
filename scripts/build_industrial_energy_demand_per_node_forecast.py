@@ -83,6 +83,51 @@ def _force_numeric(df: pd.DataFrame) -> pd.DataFrame:
             out[c] = pd.to_numeric(out[c], errors="coerce")
     return out
 
+
+def _normalize_text_columns(df: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
+    """Normalize merge-key text columns for robust workflow joins."""
+    out = df.copy()
+    for c in columns:
+        if c in out.columns:
+            out[c] = out[c].astype("string").fillna("").str.strip()
+    return out
+
+
+def _log_unmapped_summary(
+    df: pd.DataFrame,
+    value_col: str,
+    label: str,
+    group_cols: list[str],
+) -> None:
+    """Log rows and quantity that did not receive a pypsa carrier."""
+    if "pypsa_carrier" not in df.columns:
+        logger.warning("[%s] No 'pypsa_carrier' column available for unmapped check.", label)
+        return
+
+    unmapped = df[df["pypsa_carrier"].isna() | df["pypsa_carrier"].eq("")].copy()
+    if unmapped.empty:
+        logger.info("[%s] All rows mapped to pypsa carriers.", label)
+        return
+
+    row_count = len(unmapped)
+    total_value = pd.to_numeric(unmapped[value_col], errors="coerce").fillna(0.0).sum()
+    logger.warning(
+        "[%s] Unmapped rows=%d, unmapped total in %s=%.6f",
+        label,
+        row_count,
+        value_col,
+        total_value,
+    )
+
+    top = (
+        unmapped.groupby([c for c in group_cols if c in unmapped.columns], dropna=False)[value_col]
+        .sum()
+        .sort_values(ascending=False)
+        .head(20)
+    )
+    if len(top) > 0:
+        logger.warning("[%s] Top unmapped groups by %s:\n%s", label, value_col, top.to_string())
+
 NORM  = lambda s: re.sub(r"[^a-z0-9]", "", str(s).lower())
 CANON = {NORM(c): c for c in TARGET_CARRIERS}
 def canon(x):  # map any spelling to the canonical carrier if possible
@@ -178,6 +223,9 @@ if __name__ == "__main__":
 
     carrier_mapping = pd.read_csv(snakemake.input.carrier_mapping).dropna(subset=["pypsa_carrier"])
     carrier_mapping = carrier_mapping[DEMAND_COLS + ["pypsa_carrier"]]
+    ied_forecast = _normalize_text_columns(ied_forecast, DEMAND_COLS + ["Region", "Country"])
+    ipe_forecast = _normalize_text_columns(ipe_forecast, DEMAND_COLS + ["Region", "Country"])
+    carrier_mapping = _normalize_text_columns(carrier_mapping, DEMAND_COLS + ["pypsa_carrier"])
 
     # Settings
     year = snakemake.wildcards.planning_horizons
@@ -210,11 +258,29 @@ if __name__ == "__main__":
         how="left",
         validate="m:1",
     )
-    ipe_forecast = ipe_forecast.merge(
-        carrier_mapping,
-        on=DEMAND_COLS,
-        how="left",
-        validate="m:1",
+    _log_unmapped_summary(
+        df_map_car,
+        value_col=year,
+        label=f"energy-demand mapping {year}",
+        group_cols=["Energy_carrier", "Sector", "Subsector", "Application"],
+    )
+
+    # Process-emission inputs already represent a dedicated emission table.
+    # Map them explicitly to the PyPSA process-emission carriers instead of
+    # forcing them through the energy-demand carrier mapping table.
+    ipe_forecast["pypsa_carrier"] = "process emission"
+    if "Application" in ipe_forecast.columns:
+        feedstock_mask = ipe_forecast["Application"].str.contains(
+            "feedstock", case=False, na=False
+        )
+        ipe_forecast.loc[feedstock_mask, "pypsa_carrier"] = (
+            "process emission from feedstock"
+        )
+    _log_unmapped_summary(
+        ipe_forecast,
+        value_col=year,
+        label=f"process-emissions carrier assignment {year}",
+        group_cols=["Energy_carrier", "Sector", "Subsector", "Application"],
     )
     
     # Split to year and current_electricity_year
@@ -390,6 +456,26 @@ if __name__ == "__main__":
         distance_col="dist_to_region",
     )
 
+    ipe_total_before_region_map = pd.to_numeric(ipe_forecast[year], errors="coerce").fillna(0.0).sum()
+    ipe_rows_without_region = int(ipe_forecast["name"].isna().sum())
+    if ipe_rows_without_region:
+        ipe_unmapped_total = (
+            pd.to_numeric(ipe_forecast.loc[ipe_forecast["name"].isna(), year], errors="coerce")
+            .fillna(0.0)
+            .sum()
+        )
+        logger.warning(
+            "[process-emissions region mapping %s] Rows without mapped region=%d, total=%.6f",
+            year,
+            ipe_rows_without_region,
+            ipe_unmapped_total,
+        )
+    else:
+        logger.info(
+            "[process-emissions region mapping %s] All rows assigned to a region.",
+            year,
+        )
+
     # Sum by region and carrier for the selected year
     group_col = "name"
     ipe_wide = (
@@ -403,6 +489,14 @@ if __name__ == "__main__":
 
     # Reindex to mapped regions and add to mapped DataFrame
     ipe_wide = ipe_wide.reindex(mapped.index).fillna(0.0)
+    ipe_total_after_region_map = float(ipe_wide.to_numpy().sum())
+    logger.info(
+        "[process-emissions %s] Total before region aggregation=%.6f, after aggregation=%.6f, delta=%.6f",
+        year,
+        ipe_total_before_region_map,
+        ipe_total_after_region_map,
+        ipe_total_after_region_map - ipe_total_before_region_map,
+    )
     
     logger.info("[Step 11] Add process emissions")
     for carrier in PROCESS_EMISSION_CARRIERS:

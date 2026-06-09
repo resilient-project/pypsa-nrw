@@ -1269,55 +1269,53 @@ rule prepare_forecast_mapping:
         "../scripts/build_industry_forecast/mapping_xls_to_csv.py"
 
 
-# FORECAST preprocessing rules - run manually with:
-# pixi run -e default snakemake prepare_forecast_energy_demand prepare_forecast_process_emissions
-# (Do NOT auto-trigger as automatic dependencies due to wildcard mismatches)
+# FORECAST preprocessing rules.
 
-# rule prepare_forecast_energy_demand:
-#     """Preprocess FORECAST energy demand workbook: translate, validate, apply MtO conversion."""
-#     input:
-#         energy_demand_xlsx="data/forecast_industry/industrial_energy_demand_forecast.xlsx",
-#     output:
-#         expand(
-#             "data/forecast_industry/{industry_scenario}/energy_demand.csv",
-#             industry_scenario=get_available_industry_scenarios(),
-#         ),
-#     log:
-#         "logs/prepare_forecast_energy_demand.log"
-#     benchmark:
-#         "benchmarks/prepare_forecast_energy_demand.txt"
-#     resources:
-#         mem_mb=2000,
-#     params:
-#         config_forecast=config_provider("industry", "forecast_industry"),
-#     message:
-#         "Preparing FORECAST industry energy demand (all scenarios)"
-#     script:
-#         "../scripts/build_industry_forecast/prepar_forecast_industry_energy_demand.py"
+rule prepare_forecast_energy_demand:
+    """Preprocess FORECAST energy demand workbook: translate, validate, apply MtO conversion."""
+    input:
+        energy_demand_xlsx="data/forecast_industry/industrial_energy_demand_forecast.xlsx",
+    output:
+        expand(
+            "data/forecast_industry/{industry_scenario}/energy_demand.csv",
+            industry_scenario=get_available_industry_scenarios(),
+        ),
+    log:
+        "logs/prepare_forecast_energy_demand.log"
+    benchmark:
+        "benchmarks/prepare_forecast_energy_demand.txt"
+    resources:
+        mem_mb=2000,
+    params:
+        config_forecast=config_provider("industry", "forecast_industry"),
+    message:
+        "Preparing FORECAST industry energy demand (all scenarios)"
+    script:
+        "../scripts/build_industry_forecast/prepar_forecast_industry_energy_demand.py"
 
 
-# rule prepare_forecast_process_emissions:
-#     """Preprocess FORECAST process emissions: translate, geo-locate coordinates → NUTS3 regions."""
-#     input:
-#         process_emissions_xlsx="data/forecast_industry/industrial_process_emission_forecast.xlsx",
-#         nuts3_shapes=resources("nuts3_shapes.geojson"),
-#     output:
-#         expand(
-#             "data/forecast_industry/{industry_scenario}/process_emissions.csv",
-#             industry_scenario=get_available_industry_scenarios(),
-#         ),
-#     log:
-#         "logs/prepare_forecast_process_emissions.log"
-#     benchmark:
-#         "benchmarks/prepare_forecast_process_emissions.txt"
-#     resources:
-#         mem_mb=2000,
-#     params:
-#         config_forecast=config_provider("industry", "forecast_industry"),
-#     message:
-#         "Preparing FORECAST industry process emissions (all scenarios)"
-#     script:
-#         "../scripts/build_industry_forecast/prepar_forecast_industry_process_emission.py"
+rule prepare_forecast_process_emissions:
+    """Preprocess FORECAST process emissions: translate, geo-locate coordinates → NUTS3 regions."""
+    input:
+        process_emissions_xlsx="data/forecast_industry/industrial_process_emission_forecast.xlsx",
+        nuts3_shapes="resources/nuts3_shapes.geojson",
+    output:
+        expand(
+            "data/forecast_industry/{industry_scenario}/process_emissions.csv",
+            industry_scenario=get_available_industry_scenarios(),
+        ),
+    log:
+        "logs/prepare_forecast_process_emissions.log"
+    benchmark:
+        "benchmarks/prepare_forecast_process_emissions.txt"
+    resources:
+        mem_mb=2000,
+    params:
+        config_forecast=config_provider("industry", "forecast_industry"),
+    message:
+        "Preparing FORECAST industry process emissions (all scenarios)"
+    script:
+        "../scripts/build_industry_forecast/prepar_forecast_industry_process_emission.py"
 
 
 rule build_industrial_energy_demand_per_node_forecast:
